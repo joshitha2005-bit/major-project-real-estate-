@@ -29,6 +29,16 @@ export const authService = {
     return response.data;
   },
 
+  subscribe: async (planData) => {
+    const response = await api.post('/auth/subscribe', planData);
+    return response.data;
+  },
+
+  updateRole: async (role) => {
+    const response = await api.post(`/auth/update-role?role=${role}`);
+    return response.data;
+  },
+
   getCurrentUser: () => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -41,3 +51,4 @@ export const authService = {
     return null;
   }
 };
+

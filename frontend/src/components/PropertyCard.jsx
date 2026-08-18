@@ -5,6 +5,8 @@ import {
   Eye, Compass, CheckCircle2, User, MessageSquare, X 
 } from 'lucide-react';
 
+const localFallbackImage = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'><rect width='800' height='600' fill='%230f172a'/><g transform='translate(400, 300)'><path d='M-60,40 L-60,-20 L0,-70 L60,-20 L60,40 Z' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linejoin='round'/><path d='M-20,40 L-20,0 L20,0 L20,40' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linejoin='round'/></g><text x='400' y='420' fill='%2364748b' font-family='sans-serif' font-size='20' font-weight='bold' text-anchor='middle'>Property Photo Unavailable</text></svg>";
+
 export const PropertyCard = ({ property, onSelectOnMap }) => {
   const [showContactModal, setShowContactModal] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
@@ -22,6 +24,7 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
           <div className="relative aspect-[16/10] overflow-hidden bg-slate-900">
             <img 
               src={mainImage} 
+              onError={(e) => { e.target.src = localFallbackImage; }}
               alt={property.title} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
             />
@@ -31,6 +34,16 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
             <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-dark-950/80 backdrop-blur-md border border-slate-700/80 text-xs font-bold text-brand-300">
               <Building2 className="w-3.5 h-3.5 text-brand-400" />
               <span>{property.property_type}</span>
+            </div>
+
+            {/* Listing Type & Source Badges */}
+            <div className="absolute top-3 right-3 flex items-center gap-1.5">
+              <span className="px-2.5 py-1 rounded-full bg-dark-950/85 backdrop-blur-md border border-slate-700/85 text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">
+                {property.listing_type || 'Buy'}
+              </span>
+              <span className="px-2.5 py-1 rounded-full bg-brand-500/20 backdrop-blur-md border border-brand-500/40 text-[10px] font-bold text-brand-300">
+                {property.source_type === 'demo_dataset' ? 'Research Data' : 'Owner'}
+              </span>
             </div>
 
             {/* Price Badge */}
@@ -45,7 +58,13 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
           </div>
 
           {/* Details Body */}
-          <div className="p-5 space-y-3">
+          <div className="p-5 space-y-2">
+            <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-slate-500">
+              <span>{property.locality || 'Bengaluru'}</span>
+              <span className="text-slate-700">•</span>
+              <span className="text-brand-400">{property.verification_status || 'Verified'}</span>
+            </div>
+
             <h3 className="text-base font-bold text-white line-clamp-1 group-hover:text-brand-300 transition-colors font-outfit">
               {property.title}
             </h3>

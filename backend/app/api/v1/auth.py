@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -10,9 +10,11 @@ from app.models.search_history import SearchHistory
 from app.models.saved_location import SavedLocation
 from app.schemas.user import UserCreate, UserOut, UserLogin, UserProfile
 from app.schemas.token import Token
+from app.schemas.subscription import SubscriptionCreate, SubscriptionOut
 from app.api.deps import get_current_user
 
 router = APIRouter()
+
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
@@ -75,9 +77,64 @@ def get_profile(
         id=current_user.id,
         email=current_user.email,
         full_name=current_user.full_name,
+        role=current_user.role,
         is_active=current_user.is_active,
         created_at=current_user.created_at,
+        subscription_status=current_user.subscription_status,
         total_searches=total_searches,
         total_saved=total_saved
     )
     return profile
+
+@router.post("/subscribe", response_model=SubscriptionOut)
+def subscribe(
+    sub_in: SubscriptionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Upgrade or create subscription for current user."""
+    from app.models.subscription import Subscription
+    
+    # Check if there is already an active subscription
+    active_sub = db.query(Subscription).filter(
+        Subscription.user_id == current_user.id,
+        Subscription.status == "ACTIVE"
+    ).first()
+    
+    now = datetime.now(timezone.utc)
+    end_date = now + timedelta(days=sub_in.duration_days or 30)
+    
+    if active_sub:
+        active_sub.end_date = end_date
+        active_sub.payment_reference = sub_in.payment_reference or active_sub.payment_reference
+        db.commit()
+        db.refresh(active_sub)
+        return active_sub
+        
+    new_sub = Subscription(
+        user_id=current_user.id,
+        plan_name=sub_in.plan_name,
+        status="ACTIVE", # Activates subscription immediately for sandbox/viva
+        start_date=now,
+        end_date=end_date,
+        payment_reference=sub_in.payment_reference
+    )
+    db.add(new_sub)
+    db.commit()
+    db.refresh(new_sub)
+    return new_sub
+
+@router.post("/update-role", response_model=UserOut)
+def update_role(
+    role: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update user role (for sandbox/viva testing purposes)."""
+    if role not in ["USER", "OWNER", "ADMIN"]:
+        raise HTTPException(status_code=400, detail="Invalid role type.")
+    current_user.role = role
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+

@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { Eye, ArrowLeft, ExternalLink, Loader2, MapPin } from 'lucide-react';
 
 // Fix Leaflet default icon paths in React Vite environment
 delete L.Icon.Default.prototype._getIconUrl;
@@ -65,13 +66,146 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
+// Thread-safe dynamic Google Maps script loader
+const loadGoogleMapsScript = (apiKey) => {
+  return new Promise((resolve, reject) => {
+    if (window.google && window.google.maps) {
+      resolve(window.google);
+      return;
+    }
+    const existingScript = document.getElementById('google-maps-script');
+    if (existingScript) {
+      const interval = setInterval(() => {
+        if (window.google && window.google.maps) {
+          clearInterval(interval);
+          resolve(window.google);
+        }
+      }, 100);
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = 'google-maps-script';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve(window.google);
+    script.onerror = (err) => reject(err);
+    document.head.appendChild(script);
+  });
+};
+
 export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [] }) => {
+  const [showStreetView, setShowStreetView] = useState(false);
+  const [streetViewStatus, setStreetViewStatus] = useState('idle'); // 'idle' | 'loading' | 'available' | 'unavailable' | 'error'
+  const [imageryDate, setImageryDate] = useState('');
+  const [nearestLocation, setNearestLocation] = useState(null);
+
+  const panoramaRef = useRef(null);
+  const panoramaInstance = useRef(null);
+
   const defaultCenter = searchResult 
     ? [searchResult.latitude, searchResult.longitude]
     : (currentLocation ? [currentLocation.latitude, currentLocation.longitude] : [12.9352, 77.6245]); // Koramangala default
 
+  const lat = searchResult?.latitude || currentLocation?.latitude;
+  const lon = searchResult?.longitude || currentLocation?.longitude;
+
+  const handleViewStreetView = async () => {
+    if (!lat || !lon) {
+      setStreetViewStatus('unavailable');
+      setShowStreetView(true);
+      return;
+    }
+
+    setShowStreetView(true);
+    setStreetViewStatus('loading');
+
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+    if (!apiKey || apiKey.includes('DummyKey') || apiKey.includes('YOUR_GOOGLE')) {
+      console.warn("Street View: Dummy/missing VITE_GOOGLE_MAPS_API_KEY. Using fallback.");
+      setStreetViewStatus('unavailable');
+      return;
+    }
+
+    // Suppress Google Maps API alerts for dummy/restricted keys
+    const originalAlert = window.alert;
+    window.alert = (msg) => {
+      if (msg && (msg.includes('Google Maps') || msg.includes('ApiNotActivatedMapError'))) {
+        console.warn('Google Maps API warning:', msg);
+        return;
+      }
+      originalAlert(msg);
+    };
+
+    try {
+      const google = await loadGoogleMapsScript(apiKey);
+      const service = new google.maps.StreetViewService();
+      
+      service.getPanorama({
+        location: { lat, lng: lon },
+        radius: 200,
+        preference: google.maps.StreetViewPreference.NEAREST
+      }, (data, status) => {
+        window.alert = originalAlert;
+
+        if (status === google.maps.StreetViewStatus.OK && data && data.location) {
+          setStreetViewStatus('available');
+          setImageryDate(data.imageDate || 'Unknown Date');
+          
+          setNearestLocation({
+            lat: data.location.latLng.lat(),
+            lon: data.location.latLng.lng()
+          });
+
+          // Mount panorama on next tick once DOM is ready
+          setTimeout(() => {
+            if (panoramaRef.current) {
+              panoramaInstance.current = new google.maps.StreetViewPanorama(panoramaRef.current, {
+                position: data.location.latLng,
+                pov: { heading: 165, pitch: 0 },
+                zoom: 1,
+                addressControl: false,
+                linksControl: true,
+                panControl: true,
+                enableCloseButton: false
+              });
+            }
+          }, 50);
+        } else {
+          setStreetViewStatus('unavailable');
+        }
+      });
+    } catch (err) {
+      window.alert = originalAlert;
+      console.error("Failed to load Google Maps SDK:", err);
+      setStreetViewStatus('error');
+    }
+  };
+
+  const handleBackToMap = () => {
+    setShowStreetView(false);
+    setStreetViewStatus('idle');
+    setImageryDate('');
+    setNearestLocation(null);
+    if (panoramaInstance.current) {
+      panoramaInstance.current = null;
+    }
+  };
+
   return (
     <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl glass-card">
+      {/* View Street View Button overlay */}
+      {!showStreetView && searchResult && (
+        <button
+          onClick={handleViewStreetView}
+          className="absolute top-4 right-4 z-[1000] px-4 py-2 bg-slate-900/90 hover:bg-slate-800 text-white text-xs font-bold rounded-xl border border-slate-800 shadow-lg flex items-center gap-1.5 transition-all hover:scale-105"
+        >
+          <Eye className="w-4 h-4 text-brand-400" />
+          <span>View Street View</span>
+        </button>
+      )}
+
+      {/* Leaflet Map (Hidden/Inactive when Street View panel overlays it) */}
       <MapContainer
         center={defaultCenter}
         zoom={14}
@@ -146,6 +280,91 @@ export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [] }) =>
           </Marker>
         ))}
       </MapContainer>
+
+      {/* Street View Panel Overlay */}
+      {showStreetView && (
+        <div className="absolute inset-0 z-[2000] bg-slate-950 flex flex-col">
+          {/* Header Panel */}
+          <div className="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleBackToMap}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Map</span>
+              </button>
+              <span className="text-sm font-bold text-white font-outfit">Street View Surroundings</span>
+            </div>
+
+            <div className="text-right">
+              {streetViewStatus === 'available' && (
+                <div className="text-xs text-slate-400">
+                  <span className="text-brand-400 font-semibold">Nearest available Street View</span>
+                  {imageryDate && ` | Date: ${imageryDate}`}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Viewer / Status Area */}
+          <div className="flex-1 relative bg-slate-900 flex items-center justify-center">
+            {streetViewStatus === 'loading' && (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <Loader2 className="w-8 h-8 text-brand-500 animate-spin" />
+                <p className="text-xs text-slate-400 font-medium">Checking Street View metadata & availability...</p>
+              </div>
+            )}
+
+            {streetViewStatus === 'available' && (
+              <div className="w-full h-full relative">
+                {/* Panorama Target Container */}
+                <div ref={panoramaRef} className="w-full h-full" />
+                
+                {/* Float Action: Open in Google Maps */}
+                {lat && lon && (
+                  <a
+                    href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-4 right-4 z-[2010] px-3.5 py-2 bg-slate-900/90 hover:bg-slate-800 text-white text-xs font-bold rounded-xl border border-slate-800 shadow-lg flex items-center gap-1.5 transition-all"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Open in Google Maps Street View</span>
+                  </a>
+                )}
+              </div>
+            )}
+
+            {(streetViewStatus === 'unavailable' || streetViewStatus === 'error') && (
+              <div className="p-6 text-center space-y-4 max-w-sm">
+                <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center mx-auto border border-slate-700">
+                  <MapPin className="w-6 h-6 text-slate-500" />
+                </div>
+                <div className="space-y-1.5">
+                  <h4 className="text-sm font-bold text-white">Street View Unavailable</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Street View imagery is not available near this property.
+                  </p>
+                </div>
+                {lat && lon && (
+                  <div className="pt-2">
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/20 text-xs font-semibold rounded-xl transition-all"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Open Location in Google Maps</span>
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

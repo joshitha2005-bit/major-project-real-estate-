@@ -1,0 +1,23 @@
+{
+  "dataset_name": "Bengaluru_House_Data.csv",
+  "original_rows": 13320,
+  "cleaned_rows": 9889,
+  "unique_locations": 251,
+  "train_rows": 7911,
+  "test_rows": 1978,
+  "features": [
+    "location",
+    "area_type",
+    "total_sqft",
+    "bhk",
+    "bath",
+    "balcony"
+  ],
+  "metrics": {
+    "mae_inr": 2014028.8558518705,
+    "mae_lakhs": 20.14,
+    "rmse_inr": 5325674.960984134,
+    "rmse_lakhs": 53.26,
+    "r2": 0.7226
+  }
+}

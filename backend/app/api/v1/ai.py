@@ -10,16 +10,21 @@ from app.services.safety_service import SafetyGuardService
 from app.services.price_prediction_service import PricePredictionService
 from app.services.pdf_report_service import PDFReportService
 from app.api.v1.properties import enrich_property_out
+from app.models.user import User
+from app.api.deps import verify_pro_access
+
 
 router = APIRouter()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 @router.get("/analyze-property/{id}", response_model=Dict[str, Any])
-def analyze_property_full_ai(
+async def analyze_property_full_ai(
     id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(verify_pro_access)
 ):
+
     """Run complete AI suite (CV, NLP, Safety Guard, XGBoost Price Prediction, SHAP Explainability) on a property."""
     prop = db.query(Property).filter(Property.id == id).first()
     if not prop:
@@ -34,7 +39,8 @@ def analyze_property_full_ai(
     nlp_results = TextAIService.analyze_description(prop.description or "")
 
     # 3. Locality Safety Guard Analysis
-    safety_results = SafetyGuardService.analyze_locality_safety(prop.address, prop.latitude, prop.longitude)
+    safety_results = await SafetyGuardService.analyze_locality_safety(prop.address, prop.latitude, prop.longitude)
+
 
     # 4. XGBoost Price Prediction & SHAP Explainability
     prediction_results = PricePredictionService.predict_property_valuation(
@@ -61,9 +67,10 @@ def analyze_property_full_ai(
     }
 
 @router.get("/property-report/{id}/pdf")
-def generate_pdf_report(
+async def generate_pdf_report(
     id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(verify_pro_access)
 ):
     """Generate and stream downloadable PDF report for a property."""
     prop = db.query(Property).filter(Property.id == id).first()
@@ -71,7 +78,8 @@ def generate_pdf_report(
         raise HTTPException(status_code=404, detail="Property not found")
 
     enriched = enrich_property_out(prop).model_dump()
-    analytics = analyze_property_full_ai(id, db)
+    analytics = await analyze_property_full_ai(id, db, current_user=current_user)
+
 
     pdf_bytes = PDFReportService.generate_property_pdf_report(enriched, analytics)
     
@@ -83,3 +91,4 @@ def generate_pdf_report(
             "Content-Disposition": f"attachment; filename={filename}"
         }
     )
+

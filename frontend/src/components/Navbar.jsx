@@ -88,6 +88,16 @@ export const Navbar = () => {
             </Link>
 
             <Link
+              to="/subscription"
+              className={`flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-brand-500 ${
+                isActive('/subscription') ? 'text-brand-500 font-semibold' : 'text-slate-300'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Upgrade / Roles
+            </Link>
+
+            <Link
               to="/profile"
               className={`flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-brand-500 ${
                 isActive('/profile') ? 'text-brand-500 font-semibold' : 'text-slate-300'
@@ -97,6 +107,7 @@ export const Navbar = () => {
               Profile
             </Link>
           </div>
+
 
           {/* Action Buttons */}
           <div className="hidden md:flex items-center gap-4">
@@ -185,12 +196,20 @@ export const Navbar = () => {
             Search
           </Link>
           <Link
+            to="/subscription"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-md text-base font-medium text-slate-200 hover:bg-slate-800"
+          >
+            Upgrade / Roles
+          </Link>
+          <Link
             to="/profile"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-md text-base font-medium text-slate-200 hover:bg-slate-800"
           >
             Profile
           </Link>
+
           {user ? (
             <button
               onClick={() => {

@@ -10,8 +10,10 @@ import { ProfilePage } from './pages/ProfilePage';
 import { PropertyDetailsPage } from './pages/PropertyDetailsPage';
 import { PropertyListingsPage } from './pages/PropertyListingsPage';
 import { AiDashboardPage } from './pages/AiDashboardPage';
+import { SubscriptionPage } from './pages/SubscriptionPage';
 
 function App() {
+
   return (
     <AuthProvider>
       <Router>
@@ -62,6 +64,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          <Route
+            path="/subscription"
+            element={
+              <ProtectedRoute>
+                <SubscriptionPage />
+              </ProtectedRoute>
+            }
+          />
+
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

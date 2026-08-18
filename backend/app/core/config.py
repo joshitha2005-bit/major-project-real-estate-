@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     # Geoapify GIS API Key (Loaded strictly from env variable GEOAPIFY_API_KEY)
     GEOAPIFY_API_KEY: str = os.getenv("GEOAPIFY_API_KEY", "7e57c95ce01147f38a78dab8029c635a")
     
+    # Google Maps API Configuration
+    GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY", "")
+    
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",

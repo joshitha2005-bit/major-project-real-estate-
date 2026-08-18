@@ -17,3 +17,7 @@ frontend/.env
 
 # VS Code
 .vscode/
+
+# Large Datasets
+*.zip
+*.pkl

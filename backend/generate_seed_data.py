@@ -158,6 +158,31 @@ class SeedService:
             except Exception:
                 db.rollback()
 
+            # Dynamic migration for Phase 2 columns
+            NEW_COLUMNS = [
+                ("listing_type", "VARCHAR(100) DEFAULT 'Buy'"),
+                ("locality", "VARCHAR(255) DEFAULT ''"),
+                ("amenities", "JSON DEFAULT '[]'"),
+                ("street_view_available", "BOOLEAN DEFAULT 0"),
+                ("seller_type", "VARCHAR(100) DEFAULT 'Owner'"),
+                ("seller_name", "VARCHAR(255) DEFAULT 'PropPulse Verified Seller'"),
+                ("phone", "VARCHAR(100) DEFAULT '+91 98860 12345'"),
+                ("verification_status", "VARCHAR(100) DEFAULT 'Verified'"),
+                ("source_type", "VARCHAR(100) DEFAULT 'demo_dataset'"),
+                ("source", "VARCHAR(255) DEFAULT 'PropPulse Direct'"),
+                ("source_url", "VARCHAR(500) DEFAULT ''"),
+                ("image_source", "VARCHAR(500) DEFAULT ''"),
+                ("verified", "BOOLEAN DEFAULT 1"),
+                ("updated_at", "DATETIME DEFAULT NULL")
+
+            ]
+            for col_name, col_type in NEW_COLUMNS:
+                try:
+                    db.execute(text(f"ALTER TABLE properties ADD COLUMN {{col_name}} {{col_type}}"))
+                    db.commit()
+                except Exception:
+                    db.rollback()
+
             # Check if default admin user exists
             default_user = db.query(User).first()
             if not default_user:
@@ -178,11 +203,36 @@ class SeedService:
                 db.query(Property).delete()
                 db.commit()
 
-                for item in SEEDED_PROPERTIES:
+                for idx, item in enumerate(SEEDED_PROPERTIES):
+                    # Extract locality name
+                    title_words = item["title"].split()
+                    locality_clean = ""
+                    for word in title_words:
+                        w_lower = word.lower()
+                        if w_lower in ["koramangala", "whitefield", "hsr", "indiranagar", "electronic", "chandapura", "marathahalli", "bellandur", "sarjapur", "jp", "jayanagar", "hebbal", "yelahanka", "banashankari", "kr", "mahadevapura", "btm"]:
+                            locality_clean = word
+                            break
+                    if not locality_clean:
+                        parts = item["address"].split(",")
+                        if len(parts) > 2:
+                            locality_clean = parts[2].strip().replace("Bengaluru", "").replace("-", "").strip()
+                        else:
+                            locality_clean = "Bengaluru"
+
+                    listing_type = "Rent" if idx % 3 == 0 else "Buy"
+                    street_view_avail = True if idx % 2 == 0 else False
+
+                    amenities_list = ["Security", "Power Backup", "Water Supply"]
+                    if item["property_type"] == "Apartment":
+                        amenities_list += ["Lift", "Gym", "Clubhouse"]
+                    elif item["property_type"] == "Villa":
+                        amenities_list += ["Private Garden", "Swimming Pool", "Car Parking"]
+
                     p = Property(
                         user_id=default_user.id,
                         title=item["title"],
                         property_type=item["property_type"],
+                        listing_type=listing_type,
                         bhk=item["bhk"],
                         area_sqft=item["area_sqft"],
                         bathrooms=item["bathrooms"],
@@ -196,12 +246,22 @@ class SeedService:
                         price=item["price"],
                         description=item["description"],
                         address=item["address"],
+                        locality=locality_clean,
                         latitude=item["latitude"],
                         longitude=item["longitude"],
                         owner_name=item["owner_name"],
                         owner_phone=item["owner_phone"],
                         images=item["images"],
-                        nearby_places=[]
+                        nearby_places=[],
+                        amenities=amenities_list,
+                        street_view_available=street_view_avail,
+                        seller_type="Owner" if idx % 2 == 0 else "Broker",
+                        seller_name=item["owner_name"],
+                        phone=item["owner_phone"],
+                        verification_status="Historical / Research",
+                        source_type="demo_dataset",
+                        source="Kaggle Research Dataset",
+                        verified=False
                     )
                     db.add(p)
                 db.commit()

@@ -3,6 +3,19 @@ import math
 from typing import List, Dict, Any, Optional
 from app.core.config import settings
 
+# Singular label used when Geoapify returns a POI with no name
+_SINGULAR_LABEL: Dict[str, str] = {
+    "Schools":        "School",
+    "Colleges":       "College",
+    "Hospitals":      "Hospital",
+    "Metro Stations": "Metro Station",
+    "Bus Stops":      "Bus Stop",
+    "Parks":          "Park",
+    "Restaurants":    "Restaurant",
+    "Shopping Malls": "Shopping Mall",
+    "Banks":          "Bank",
+}
+
 GEOAPIFY_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/search"
 GEOAPIFY_REVERSE_URL = "https://api.geoapify.com/v1/geocode/reverse"
 GEOAPIFY_PLACES_URL = "https://api.geoapify.com/v2/places"
@@ -157,72 +170,168 @@ class GeoapifyService:
         }
 
     @staticmethod
-    async def get_nearby_places(lat: float, lon: float, radius_meters: int = 5000) -> List[Dict[str, Any]]:
-        """Fetch nearby Schools, Hospitals, Metro, Restaurants, Malls, Banks, Parks, Colleges, Bus Stops via live Geoapify Places API."""
-        categories = "education,healthcare,public_transport,catering,commercial,service.financial,leisure"
-        
-        async with httpx.AsyncClient(timeout=12.0) as client:
-            params = {
-                "categories": categories,
-                "filter": f"circle:{lon},{lat},{radius_meters}",
-                "bias": f"proximity:{lon},{lat}",
-                "limit": 50,
-                "apiKey": settings.GEOAPIFY_API_KEY
-            }
-            url = f"{GEOAPIFY_PLACES_URL}?categories={categories}&filter=circle:{lon},{lat},{radius_meters}&bias=proximity:{lon},{lat}&limit=50&apiKey={settings.GEOAPIFY_API_KEY[:6]}..."
-            try:
-                response = await client.get(GEOAPIFY_PLACES_URL, params=params)
-                if response.status_code == 200:
-                    data = response.json()
-                    features = data.get("features", [])
-                    results = []
-                    category_counts = {}
+    def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """Calculate Haversine distance in meters between two geographical points."""
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return 6371000.0 * c
 
-                    for item in features:
-                        props = item.get("properties", {})
-                        geom = item.get("geometry", {})
-                        c_coords = geom.get("coordinates", [lon, lat])
-                        
-                        name = props.get("name") or props.get("street") or props.get("formatted") or "Point of Interest"
-                        cats = props.get("categories", [])
-                        cats_str = " ".join(cats).lower()
-                        
-                        # Categorization
-                        if "school" in cats_str: cat_label = "Schools"
-                        elif "college" in cats_str or "university" in cats_str: cat_label = "Colleges"
-                        elif "hospital" in cats_str or "clinic" in cats_str or "healthcare" in cats_str: cat_label = "Hospitals"
-                        elif "subway" in cats_str or "metro" in cats_str or "train" in cats_str: cat_label = "Metro Stations"
-                        elif "bus" in cats_str: cat_label = "Bus Stops"
-                        elif "restaurant" in cats_str or "fast_food" in cats_str or "cafe" in cats_str or "catering" in cats_str or "food" in cats_str: cat_label = "Restaurants"
-                        elif "shopping" in cats_str or "mall" in cats_str or "supermarket" in cats_str or "commercial" in cats_str: cat_label = "Shopping Malls"
-                        elif "bank" in cats_str or "financial" in cats_str or "atm" in cats_str: cat_label = "Banks"
-                        elif "park" in cats_str or "garden" in cats_str or "playground" in cats_str or "leisure" in cats_str: cat_label = "Parks"
-                        else: cat_label = "Amenities"
-                        
-                        category_counts[cat_label] = category_counts.get(cat_label, 0) + 1
+    @classmethod
+    async def _fetch_category_places(
+        cls, 
+        client: httpx.AsyncClient, 
+        cat_label: str, 
+        geo_cats: List[str], 
+        lat: float, 
+        lon: float, 
+        radius_meters: int = 5000, 
+        per_category_limit: int = 6
+    ) -> List[Dict[str, Any]]:
+        """Fetch places for a specific category taxonomy using Geoapify API."""
+        cats_query = ",".join(geo_cats)
+        params = {
+            "categories": cats_query,
+            "filter": f"circle:{lon},{lat},{radius_meters}",
+            "bias": f"proximity:{lon},{lat}",
+            "limit": per_category_limit,
+            "apiKey": settings.GEOAPIFY_API_KEY
+        }
+        try:
+            resp = await client.get(GEOAPIFY_PLACES_URL, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                features = data.get("features", [])
+                places = []
+                # Singular form used for honest unnamed-place fallbacks
+                singular = _SINGULAR_LABEL.get(cat_label, cat_label)
+                for feat in features:
+                    props = feat.get("properties", {})
+                    geom = feat.get("geometry", {})
+                    coords = geom.get("coordinates", [lon, lat])
+                    p_lon, p_lat = coords[0], coords[1]
 
-                        dist = props.get("distance")
-                        if dist is None:
-                            dlat = math.radians(c_coords[1] - lat)
-                            dlon = math.radians(c_coords[0] - lon)
-                            a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat)) * math.cos(math.radians(c_coords[1])) * math.sin(dlon / 2)**2
-                            dist = 6371000 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                    # Use proper name only; never use a road/address string as a place name
+                    raw_name = props.get("name") or ""
+                    name = raw_name.strip() if raw_name.strip() else f"Unnamed {singular}"
 
-                        results.append({
-                            "name": name,
-                            "category": cat_label,
-                            "distance_meters": round(dist, 1),
-                            "latitude": c_coords[1],
-                            "longitude": c_coords[0],
-                            "address": props.get("address_line2") or props.get("formatted") or f"Near ({c_coords[1]:.4f}, {c_coords[0]:.4f})"
-                        })
+                    dist = props.get("distance")
+                    if dist is None:
+                        dist = cls.haversine_distance(lat, lon, p_lat, p_lon)
 
-                    print(f"Geoapify Places Request URL: {url}")
-                    print(f"Total Places Fetched: {len(results)} | Breakdown: {category_counts}")
+                    # Build address from address_line2 first (more specific),
+                    # then formatted (full address), then coordinate fallback
+                    address = (
+                        props.get("address_line2")
+                        or props.get("formatted")
+                        or f"Near ({p_lat:.4f}, {p_lon:.4f})"
+                    )
 
-                    if results:
-                        return results
-            except Exception as e:
-                print(f"Geoapify Places error: {e}")
-
+                    places.append({
+                        "name": name,
+                        "category": cat_label,
+                        "distance_meters": round(float(dist), 1),
+                        "latitude": float(p_lat),
+                        "longitude": float(p_lon),
+                        "address": address
+                    })
+                return places
+        except Exception as e:
+            print(f"Geoapify Places error for category '{cat_label}': {e}")
         return []
+
+    @classmethod
+    async def get_nearby_places(cls, lat: float, lon: float, radius_meters: int = 5000) -> List[Dict[str, Any]]:
+        """Fetch nearby Schools, Hospitals, Metro, Bus Stops, Parks, Restaurants, Malls, Colleges, Banks via targeted Geoapify queries."""
+        category_taxonomy_map = {
+            "Schools":        ["education.school"],
+            "Colleges":       ["education.college", "education.university"],
+            # FIX: 'healthcare.clinic' is not a valid Geoapify category (returns HTTP 400).
+            # Replaced with 'healthcare.clinic_or_praxis' which is the correct taxonomy string
+            # and verified to return HTTP 200 with real clinic POIs.
+            "Hospitals":      ["healthcare.hospital", "healthcare.clinic_or_praxis"],
+            "Metro Stations": ["building.transportation", "public_transport.subway", "public_transport.train"],
+            "Bus Stops":      ["public_transport.bus"],
+            "Parks":          ["leisure.park", "leisure.playground"],
+            "Restaurants":    ["catering.restaurant"],
+            # FIX: 'commercial.supermarket' returned ordinary provision stores and grocery shops,
+            # not actual shopping malls. Removed. Only genuine mall POIs are included.
+            "Shopping Malls": ["commercial.shopping_mall"],
+            "Banks":          ["service.financial.bank", "service.financial.atm"]
+        }
+
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            import asyncio
+            tasks = [
+                cls._fetch_category_places(client, cat_label, geo_cats, lat, lon, radius_meters, per_category_limit=6)
+                for cat_label, geo_cats in category_taxonomy_map.items()
+            ]
+            results_nested = await asyncio.gather(*tasks)
+
+        # Deduplication by (normalized_name, round(lat, 4), round(lon, 4))
+        all_places = []
+        seen_keys = set()
+
+        for category_places in results_nested:
+            for p in category_places:
+                norm_name = p["name"].strip().lower()
+                key = (norm_name, round(p["latitude"], 4), round(p["longitude"], 4))
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                all_places.append(p)
+
+        # Ascending distance sort: nearest first
+        all_places.sort(key=lambda item: item["distance_meters"])
+
+        category_counts = {}
+        for p in all_places:
+            category_counts[p["category"]] = category_counts.get(p["category"], 0) + 1
+
+        print(f"Geoapify Targeted Places Fetched: {len(all_places)} valid items | Breakdown: {category_counts}")
+        return all_places
+
+    @staticmethod
+    def calculate_gis_lifestyle_score(places: List[Dict[str, Any]]) -> float:
+        """Calculate Location / Lifestyle score based on actual GIS infrastructure proximity."""
+        if not places:
+            return 65.0
+
+        base_score = 50.0
+        cat_min_dists = {}
+        for p in places:
+            cat = p["category"]
+            dist = p["distance_meters"]
+            if cat not in cat_min_dists or dist < cat_min_dists[cat]:
+                cat_min_dists[cat] = dist
+
+        # Metro accessibility bonus
+        metro_dist = cat_min_dists.get("Metro Stations", 99999)
+        if metro_dist <= 1500: base_score += 15.0
+        elif metro_dist <= 3000: base_score += 10.0
+        elif metro_dist <= 5000: base_score += 5.0
+
+        # Healthcare accessibility bonus
+        hosp_dist = cat_min_dists.get("Hospitals", 99999)
+        if hosp_dist <= 2000: base_score += 12.0
+        elif hosp_dist <= 4000: base_score += 7.0
+
+        # Education accessibility bonus
+        edu_dist = min(cat_min_dists.get("Schools", 99999), cat_min_dists.get("Colleges", 99999))
+        if edu_dist <= 1500: base_score += 10.0
+        elif edu_dist <= 3000: base_score += 5.0
+
+        # Parks & Recreation bonus
+        park_dist = cat_min_dists.get("Parks", 99999)
+        if park_dist <= 1500: base_score += 8.0
+
+        # Shopping & Dining bonus
+        shop_dist = min(cat_min_dists.get("Shopping Malls", 99999), cat_min_dists.get("Restaurants", 99999))
+        if shop_dist <= 2000: base_score += 5.0
+
+        # Amenities volume bonus
+        base_score += min(10.0, len(places) * 0.2)
+
+        return min(98.0, max(35.0, round(base_score, 1)))
+

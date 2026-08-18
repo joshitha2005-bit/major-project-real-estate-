@@ -8,7 +8,7 @@ import { NearbyPlacesList } from '../components/NearbyPlacesList';
 import { 
   Sparkles, Brain, Eye, FileText, ShieldAlert, 
   TrendingUp, IndianRupee, Download, ArrowLeft, Loader2, 
-  CheckCircle2, AlertTriangle, Cpu, Layers, Compass, ThumbsUp, ThumbsDown
+  CheckCircle2, AlertTriangle, Cpu, Layers, Compass, ThumbsUp, ThumbsDown, Lock
 } from 'lucide-react';
 
 export const AiDashboardPage = () => {
@@ -20,6 +20,8 @@ export const AiDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [proLocked, setProLocked] = useState(false);
+
 
   useEffect(() => {
     fetchAiAnalytics();
@@ -27,16 +29,23 @@ export const AiDashboardPage = () => {
 
   const fetchAiAnalytics = async () => {
     setLoading(true);
+    setProLocked(false);
+    setErrorMsg('');
     try {
       const data = await aiService.analyzeProperty(propertyId);
       setAiData(data);
     } catch (err) {
       console.error("Failed to load AI analytics:", err);
-      setErrorMsg("Failed to run AI Analytics suite for this property.");
+      if (err.response?.status === 403) {
+        setProLocked(true);
+      } else {
+        setErrorMsg("Failed to run AI Analytics suite for this property.");
+      }
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleDownloadPdf = async () => {
     setDownloadingPdf(true);
@@ -65,7 +74,48 @@ export const AiDashboardPage = () => {
     );
   }
 
+  if (proLocked) {
+    return (
+      <div className="min-h-screen flex flex-col bg-dark-950 text-slate-100">
+        <Navbar />
+        <main className="flex-1 max-w-lg mx-auto px-4 py-24 text-center space-y-6">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-brand-600 to-accent-600 flex items-center justify-center shadow-xl shadow-brand-500/30 mx-auto animate-bounce">
+            <Brain className="w-8 h-8 text-white" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-extrabold font-outfit text-white">Unlock Advanced AI Analytics</h2>
+            <p className="text-sm text-slate-400">The dynamic full-suite AI dashboard is exclusive to Pro members. Upgrade to get predictions, SHAP pricing explainers, and ResNet visual scans.</p>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4">
+            <div className="flex items-center justify-between text-left">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-brand-400">Premium plan</span>
+                <h4 className="text-sm font-bold text-white">PropPulse Pro Plan</h4>
+              </div>
+              <span className="text-lg font-mono font-extrabold text-white">₹299/mo</span>
+            </div>
+            <button
+              onClick={() => navigate('/subscription')}
+              className="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-extrabold text-xs shadow-lg shadow-brand-500/20 transition-all duration-300"
+            >
+              Upgrade to Pro Plan
+            </button>
+          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white font-semibold transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Go Back</span>
+          </button>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   if (errorMsg || !aiData) {
+
     return (
       <div className="min-h-screen flex flex-col bg-dark-950 text-slate-100">
         <Navbar />
@@ -185,17 +235,18 @@ export const AiDashboardPage = () => {
             <p className="text-[10px] text-slate-500">Super Built-up Benchmark</p>
           </div>
 
-          {/* Card 4: Confidence Score */}
-          <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2">
+          {/* Card 4: Data Reliability Score */}
+          <div className="glass-card p-5 rounded-2xl border border-slate-800 space-y-2" title="Input locality match & domain data reliability index (not model prediction accuracy)">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Confidence Score</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Data Reliability Score</span>
               <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
                 <Cpu className="w-4 h-4" />
               </div>
             </div>
             <p className="text-2xl font-extrabold text-purple-400">{price_prediction.confidence_score}%</p>
-            <p className="text-[10px] text-slate-500">GIS & CV Feature Confidence</p>
+            <p className="text-[10px] text-slate-500">Input Locality & Domain Reliability</p>
           </div>
+
         </div>
 
         {/* Computer Vision & NLP Section */}
@@ -208,11 +259,15 @@ export const AiDashboardPage = () => {
                 Image AI Analysis (The Eyes)
               </h3>
               <span className="text-xs font-mono bg-brand-500/10 text-brand-400 px-2.5 py-0.5 rounded-full border border-brand-500/20">
-                OpenCV Engine
+                {image_ai.cnn_model || 'ResNet-18 CNN'}
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">CNN Feature Score</span>
+                <span className="text-lg font-bold text-brand-400">{image_ai.cnn_feature_score ?? 80.0} / 100</span>
+              </div>
               <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
                 <span className="text-slate-400 block text-[10px] uppercase font-bold">Image Quality Score</span>
                 <span className="text-lg font-bold text-white">{image_ai.image_quality_score} / 100</span>
@@ -233,9 +288,16 @@ export const AiDashboardPage = () => {
                 <span className="text-slate-400 block text-[10px] uppercase font-bold">Exterior Condition</span>
                 <span className="text-lg font-bold text-emerald-400">{image_ai.exterior_condition_score} / 100</span>
               </div>
-              <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-1">
+            </div>
+
+            <div className="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-slate-800/80 text-xs">
+              <div className="space-y-0.5">
                 <span className="text-slate-400 block text-[10px] uppercase font-bold">Overall Property Condition</span>
                 <span className="text-sm font-bold text-brand-300">{image_ai.overall_condition}</span>
+              </div>
+              <div className="text-right space-y-0.5">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Images Analyzed</span>
+                <span className="text-xs font-mono font-bold text-slate-200">{image_ai.processed_count ?? 0} image(s)</span>
               </div>
             </div>
           </div>
@@ -248,7 +310,7 @@ export const AiDashboardPage = () => {
                 Text AI Analysis (The Ears)
               </h3>
               <span className="text-xs font-mono bg-accent-500/10 text-accent-400 px-2.5 py-0.5 rounded-full border border-accent-500/20">
-                TF-IDF & NLTK
+                TF-IDF & NLP Engine
               </span>
             </div>
 
@@ -263,8 +325,66 @@ export const AiDashboardPage = () => {
               </div>
             </div>
 
-            <div className="space-y-2 pt-2">
-              <span className="text-xs font-semibold text-slate-300 block">Detected Premium Keywords ({text_ai.detected_keywords?.length || 0}):</span>
+            {/* Sentiment & Tone Row */}
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-800/80 space-y-1">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Sentiment Analysis</span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-bold ${text_ai.sentiment_label === 'Positive' ? 'text-emerald-400' : text_ai.sentiment_label === 'Negative' ? 'text-rose-400' : 'text-amber-400'}`}>
+                    {text_ai.sentiment_label || 'Neutral'}
+                  </span>
+                  <span className="text-slate-400 text-[11px]">({text_ai.sentiment_score ?? 0.5})</span>
+                </div>
+              </div>
+              <div className="bg-slate-900/50 p-3 rounded-xl border border-slate-800/80 space-y-1">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Text Tone</span>
+                <span className="font-bold text-slate-200">{text_ai.tone || 'Standard'}</span>
+              </div>
+            </div>
+
+            {/* Top TF-IDF Terms */}
+            {text_ai.top_tfidf_terms && text_ai.top_tfidf_terms.length > 0 && (
+              <div className="space-y-2 pt-1 border-t border-slate-800/60">
+                <span className="text-xs font-semibold text-slate-300 block">Top TF-IDF Terms & Weights:</span>
+                <div className="flex flex-wrap gap-2">
+                  {text_ai.top_tfidf_terms.map((item, idx) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs font-mono flex items-center gap-1.5">
+                      <span className="text-slate-200">{item.term}</span>
+                      <span className="text-accent-400 font-bold text-[11px]">{item.weight}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Categorized Amenities */}
+            {text_ai.categorized_amenities && Object.keys(text_ai.categorized_amenities).some(cat => text_ai.categorized_amenities[cat]?.length > 0) && (
+              <div className="space-y-3 pt-1 border-t border-slate-800/60 text-xs">
+                <span className="text-xs font-semibold text-slate-300 block">Detected Amenities & Features:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {Object.entries(text_ai.categorized_amenities).map(([category, items]) => {
+                    if (!items || items.length === 0) return null;
+                    return (
+                      <div key={category} className="bg-slate-900/40 p-3 rounded-xl border border-slate-800/60 space-y-1.5">
+                        <span className="text-[10px] font-bold text-accent-400 uppercase tracking-wider block">{category}</span>
+                        <div className="space-y-1">
+                          {items.map((item, i) => (
+                            <div key={i} className="flex items-center gap-1.5 text-slate-300 text-[11px]">
+                              <span className="text-emerald-400 font-bold">✓</span>
+                              <span>{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Detected Premium Keywords */}
+            <div className="space-y-2 pt-1 border-t border-slate-800/60">
+              <span className="text-xs font-semibold text-slate-300 block">Detected Keywords ({text_ai.detected_keywords?.length || 0}):</span>
               {text_ai.detected_keywords && text_ai.detected_keywords.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {text_ai.detected_keywords.map((kw, idx) => (
@@ -297,37 +417,59 @@ export const AiDashboardPage = () => {
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Safety Index</span>
-                  <span className="font-bold text-emerald-400">{safety_guard.safety_score} / 100</span>
+                  <span className="text-slate-400">Emergency Infrastructure Score</span>
+                  <span className="font-bold text-emerald-400">{safety_guard.emergency_coverage_score ?? safety_guard.safety_score} / 100</span>
                 </div>
                 <div className="w-full bg-slate-900 rounded-full h-2">
-                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${safety_guard.safety_score}%` }}></div>
+                  <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${safety_guard.emergency_coverage_score ?? safety_guard.safety_score}%` }}></div>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Crime Score (Lower is Safer)</span>
-                  <span className="font-bold text-slate-200">{safety_guard.crime_score} / 100</span>
+              {/* Emergency GIS Proximity Details */}
+              <div className="space-y-2 pt-1 border-t border-slate-800/60 text-xs">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">GIS Emergency Infrastructure:</span>
+                
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-0.5">
+                  <span className="text-[10px] text-slate-400 font-bold block">Nearest Police Station:</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200 line-clamp-1 text-[11px]">{safety_guard.nearest_police_station || 'None detected'}</span>
+                    <span className="text-emerald-400 font-mono text-[11px] font-bold">
+                      {safety_guard.nearest_police_station_dist_meters ? (safety_guard.nearest_police_station_dist_meters >= 1000 ? `${(safety_guard.nearest_police_station_dist_meters/1000).toFixed(2)} km` : `${Math.round(safety_guard.nearest_police_station_dist_meters)} m`) : 'N/A'}
+                    </span>
+                  </div>
                 </div>
-                <div className="w-full bg-slate-900 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${safety_guard.crime_score * 2.5}%` }}></div>
+
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-0.5">
+                  <span className="text-[10px] text-slate-400 font-bold block">Nearest Emergency Hospital:</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200 line-clamp-1 text-[11px]">{safety_guard.nearest_hospital || 'None detected'}</span>
+                    <span className="text-emerald-400 font-mono text-[11px] font-bold">
+                      {safety_guard.nearest_hospital_dist_meters ? (safety_guard.nearest_hospital_dist_meters >= 1000 ? `${(safety_guard.nearest_hospital_dist_meters/1000).toFixed(2)} km` : `${Math.round(safety_guard.nearest_hospital_dist_meters)} m`) : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/80 space-y-0.5">
+                  <span className="text-[10px] text-slate-400 font-bold block">Nearest Fire Station:</span>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-200 line-clamp-1 text-[11px]">{safety_guard.nearest_fire_station || 'None detected (<5km)'}</span>
+                    <span className="text-emerald-400 font-mono text-[11px] font-bold">
+                      {safety_guard.nearest_fire_station_dist_meters ? (safety_guard.nearest_fire_station_dist_meters >= 1000 ? `${(safety_guard.nearest_fire_station_dist_meters/1000).toFixed(2)} km` : `${Math.round(safety_guard.nearest_fire_station_dist_meters)} m`) : 'N/A'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Traffic Congestion Score</span>
-                  <span className="font-bold text-amber-400">{safety_guard.traffic_score} / 100</span>
+              {/* Data Availability Indicators */}
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/60 text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60">
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Flood Risk</span>
+                  <span className="font-semibold text-slate-400 text-[11px]">{safety_guard.flood_risk || 'Data Not Available'}</span>
                 </div>
-                <div className="w-full bg-slate-900 rounded-full h-2">
-                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${safety_guard.traffic_score}%` }}></div>
+                <div className="p-2.5 rounded-xl bg-slate-900/40 border border-slate-800/60">
+                  <span className="text-slate-400 block text-[9px] uppercase font-bold">Traffic Congestion</span>
+                  <span className="font-semibold text-slate-400 text-[11px]">Data Not Available</span>
                 </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Flood Risk Level</span>
-                <span className="font-bold text-emerald-400">{safety_guard.flood_risk}</span>
               </div>
             </div>
           </div>

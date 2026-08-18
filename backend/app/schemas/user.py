@@ -5,6 +5,7 @@ from typing import Optional, List
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str
+    role: Optional[str] = "USER"
 
 class UserCreate(UserBase):
     password: str
@@ -17,6 +18,7 @@ class UserOut(UserBase):
     id: int
     is_active: bool
     created_at: datetime
+    subscription_status: str = "FREE"
 
     class Config:
         from_attributes = True
@@ -24,3 +26,4 @@ class UserOut(UserBase):
 class UserProfile(UserOut):
     total_searches: int = 0
     total_saved: int = 0
+

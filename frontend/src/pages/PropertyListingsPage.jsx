@@ -8,6 +8,8 @@ import {
   ArrowRight, Loader2, IndianRupee, Layers 
 } from 'lucide-react';
 
+const localFallbackImage = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'><rect width='800' height='600' fill='%230f172a'/><g transform='translate(400, 300)'><path d='M-60,40 L-60,-20 L0,-70 L60,-20 L60,40 Z' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linejoin='round'/><path d='M-20,40 L-20,0 L20,0 L20,40' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linejoin='round'/></g><text x='400' y='420' fill='%2364748b' font-family='sans-serif' font-size='20' font-weight='bold' text-anchor='middle'>Property Photo Unavailable</text></svg>";
+
 const PROPERTY_TYPES = ["All", "Apartment", "Villa", "Independent House", "Penthouse", "Plot"];
 
 export const PropertyListingsPage = () => {
@@ -18,10 +20,23 @@ export const PropertyListingsPage = () => {
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [selectedType, setSelectedType] = useState('All');
   const [selectedBhk, setSelectedBhk] = useState(null);
+  
+  // Phase 2B additional listing filter states
+  const [selectedListingType, setSelectedListingType] = useState('All');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minArea, setMinArea] = useState('');
+  const [maxArea, setMaxArea] = useState('');
+  const [selectedFurnishing, setSelectedFurnishing] = useState('All');
+  const [selectedParking, setSelectedParking] = useState('All');
 
   useEffect(() => {
     fetchProperties();
-  }, [selectedType, selectedBhk]);
+  }, [
+    selectedType, selectedBhk, selectedListingType, 
+    minPrice, maxPrice, minArea, maxArea, 
+    selectedFurnishing, selectedParking
+  ]);
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -30,6 +45,13 @@ export const PropertyListingsPage = () => {
       if (searchQuery.trim()) params.query = searchQuery.trim();
       if (selectedType !== 'All') params.property_type = selectedType;
       if (selectedBhk) params.bhk = selectedBhk;
+      if (selectedListingType !== 'All') params.listing_type = selectedListingType;
+      if (minPrice) params.min_price = parseFloat(minPrice);
+      if (maxPrice) params.max_price = parseFloat(maxPrice);
+      if (minArea) params.min_area = parseFloat(minArea);
+      if (maxArea) params.max_area = parseFloat(maxArea);
+      if (selectedFurnishing !== 'All') params.furnishing = selectedFurnishing;
+      if (selectedParking !== 'All') params.parking = selectedParking;
 
       const data = await propertyService.getProperties(params);
       setProperties(data.items || []);
@@ -83,6 +105,97 @@ export const PropertyListingsPage = () => {
               <span>Search</span>
             </button>
           </form>
+
+          {/* Advanced filters */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
+            {/* Buy / Rent */}
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-slate-400">Listing Type</label>
+              <select
+                value={selectedListingType}
+                onChange={(e) => setSelectedListingType(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 px-2.5 py-1.5 rounded-xl text-slate-200 text-xs focus:outline-none"
+              >
+                <option value="All">All Types</option>
+                <option value="Buy">Buy</option>
+                <option value="Rent">Rent</option>
+              </select>
+            </div>
+
+            {/* Furnishing */}
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-slate-400">Furnishing</label>
+              <select
+                value={selectedFurnishing}
+                onChange={(e) => setSelectedFurnishing(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 px-2.5 py-1.5 rounded-xl text-slate-200 text-xs focus:outline-none"
+              >
+                <option value="All">All Furnishing</option>
+                <option value="Fully Furnished">Fully Furnished</option>
+                <option value="Semi-Furnished">Semi-Furnished</option>
+                <option value="Unfurnished">Unfurnished</option>
+              </select>
+            </div>
+
+            {/* Parking */}
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-slate-400">Parking</label>
+              <select
+                value={selectedParking}
+                onChange={(e) => setSelectedParking(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 px-2.5 py-1.5 rounded-xl text-slate-200 text-xs focus:outline-none"
+              >
+                <option value="All">All Parking</option>
+                <option value="Covered">Covered</option>
+                <option value="Open">Open</option>
+                <option value="None">None</option>
+              </select>
+            </div>
+
+            {/* Price Inputs */}
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-slate-400">Price Range (INR)</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 px-2 py-1.5 rounded-lg text-slate-200 text-xs focus:outline-none"
+                />
+                <span className="text-slate-500">-</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 px-2 py-1.5 rounded-lg text-slate-200 text-xs focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Area Inputs */}
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-slate-400">Area (Sqft)</label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={minArea}
+                  onChange={(e) => setMinArea(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 px-2 py-1.5 rounded-lg text-slate-200 text-xs focus:outline-none"
+                />
+                <span className="text-slate-500">-</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={maxArea}
+                  onChange={(e) => setMaxArea(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 px-2 py-1.5 rounded-lg text-slate-200 text-xs focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
 
           {/* Type & BHK Filter Pills */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
@@ -150,6 +263,7 @@ export const PropertyListingsPage = () => {
                   {prop.images && prop.images[0] ? (
                     <img
                       src={prop.images[0]}
+                      onError={(e) => { e.target.src = localFallbackImage; }}
                       alt={prop.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />

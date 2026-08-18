@@ -47,3 +47,31 @@ def get_current_user_optional(
         return db.query(User).filter(User.id == int(user_id)).first()
     except Exception:
         return None
+
+def get_current_user_with_role(required_role: str):
+    def dependency(current_user: User = Depends(get_current_user)):
+        if current_user.role != required_role:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Requires {required_role} role."
+            )
+        return current_user
+    return dependency
+
+def verify_pro_access(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> User:
+    from app.models.subscription import Subscription
+    from datetime import datetime, timezone
+    sub = db.query(Subscription).filter(
+        Subscription.user_id == current_user.id,
+        Subscription.status == "ACTIVE"
+    ).first()
+    if not sub or (sub.end_date and sub.end_date.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Pro Subscription required. Please upgrade to Pro for Rs.299/month."
+        )
+    return current_user
+

@@ -6,9 +6,18 @@ from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
 from app.api.v1 import auth, location, properties, ai
 from app.services.seed_service import SeedService
+from app.models.user import User
+from app.models.subscription import Subscription
+
+
+from app.core.migration import run_migrations
+
+# Run schema migrations first
+run_migrations()
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
 
 # Trigger initial seed
 db = SessionLocal()

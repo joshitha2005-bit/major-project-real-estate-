@@ -135,7 +135,10 @@ async def get_locality_stats(
     else:
         target_lon = 77.5946
     
-    safety_data = SafetyGuardService.analyze_locality_safety(locality, target_lat, target_lon)
+    safety_data = await SafetyGuardService.analyze_locality_safety(locality, target_lat, target_lon)
+
+    nearby_places = await GeoapifyService.get_nearby_places(target_lat, target_lon, radius_meters=5000)
+    gis_amenities_score = GeoapifyService.calculate_gis_lifestyle_score(nearby_places)
 
     return {
         "locality": locality.title(),
@@ -151,9 +154,10 @@ async def get_locality_stats(
         "avg_price_sqft": round(avg_rate, 2),
         "avg_price_sqft_formatted": f"₹{int(avg_rate):,}/sq.ft",
         "safety_score": safety_data["safety_score"],
-        "amenities_score": min(98, 75 + len(props) * 4),
+        "amenities_score": gis_amenities_score,
         "ai_market_value": fmt_cur(avg_price)
     }
+
 
 @router.get("/history", response_model=List[SearchHistoryOut])
 def get_search_history(
