@@ -43,8 +43,19 @@ export const propertyService = {
   verifyProperty: async (id, status) => {
     const response = await api.put(`/properties/${id}/verify?status=${status}`);
     return response.data;
+  },
+
+  getDashboardStats: async () => {
+    const response = await api.get('/properties/dashboard-stats');
+    return response.data;
+  },
+
+  getDatasetStats: async () => {
+    const response = await api.get('/properties/dataset-stats');
+    return response.data;
   }
 };
+
 
 
 

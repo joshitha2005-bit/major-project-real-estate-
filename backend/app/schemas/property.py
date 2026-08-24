@@ -83,6 +83,9 @@ class PropertyOut(PropertyBase):
     user_id: int
     price_per_sqft: Optional[float] = None
     price_formatted: Optional[str] = None
+    coordinate_status: Optional[str] = None
+    property_type_source: Optional[str] = None
+    society: Optional[str] = None
     nearby_places: List[Dict[str, Any]] = []
     uploaded_images: List[PropertyImageOut] = []
     created_at: datetime
@@ -93,4 +96,7 @@ class PropertyOut(PropertyBase):
 class PropertyListOut(BaseModel):
     items: List[PropertyOut]
     total: int
+    page: Optional[int] = None
+    page_size: Optional[int] = None
+
 

@@ -1,6 +1,7 @@
 import os
 import uuid
 import random
+import re
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from sqlalchemy.orm import Session
@@ -49,6 +50,35 @@ IMAGES_POOL = [
     ]
 ]
 
+LOCALITY_COORDINATES = {
+    "koramangala": (12.9357, 77.6240),
+    "electronic city": (12.8436, 77.6687),
+    "whitefield": (12.9696, 77.7497),
+    "hsr layout": (12.9116, 77.6389),
+    "indiranagar": (12.9733, 77.6405),
+    "marathahalli": (12.9591, 77.6974),
+    "bellandur": (12.9279, 77.6756),
+    "sarjapur road": (12.9107, 77.6970),
+    "jp nagar": (12.9077, 77.5854),
+    "jayanagar": (12.9250, 77.5938),
+    "banashankari": (12.9255, 77.5468),
+    "hebbal": (13.0358, 77.5970),
+    "yelahanka": (13.1007, 77.5963),
+    "kr puram": (13.0075, 77.6959),
+    "mahadevapura": (12.9902, 77.6874),
+    "btm layout": (12.9166, 77.6101),
+    "bannerghatta road": (12.8950, 77.5990),
+    "thanisandra": (13.0547, 77.6338),
+    "hennur": (13.0258, 77.6341),
+    "vijayanagar": (12.9708, 77.5350),
+    "rajajinagar": (12.9882, 77.5549),
+    "malleshwaram": (13.0031, 77.5643),
+    "basavanagudi": (12.9421, 77.5752),
+    "brookefield": (12.9658, 77.7183),
+    "chandapura": (12.8004, 77.7063)
+}
+
+
 def format_indian_currency(amount: float) -> str:
     """Format number into Indian Rupee Lakhs / Crores string representation."""
     if amount >= 10000000:
@@ -58,16 +88,101 @@ def format_indian_currency(amount: float) -> str:
     else:
         return f"₹{int(amount):,}"
 
+def is_anonymized_code(title: str) -> bool:
+    """Detect if title is purely an anonymized dataset hash code (e.g. ArsiaEx, Oreldhi, SLiritn, Soiewre, DuenaTa, SollyCl, NRosete, SrisePo)."""
+    if not title:
+        return True
+    t = title.strip()
+    if "" in t or "—" in t or "BHK" in t or "Bedroom" in t:
+        return True
+    COMMON_WORDS = ["apartment", "flat", "villa", "house", "park", "green", "view", "heights", "residency", "nest", "layout", "garden", "enclave", "city", "town", "court", "palace", "manor", "bhk", "bedroom", "floor", "gated", "space", "field", "wood", "sky", "prestige", "sobha", "salarpuria", "brigade", "godrej", "assetz", "puravankara"]
+    if re.match(r'^[A-Za-z0-9]{4,12}$', t):
+        if not any(w in t.lower() for w in COMMON_WORDS):
+            return True
+    return False
+
+def extract_location(p: Property) -> str:
+    """Extract location string, preserving specific sector or sub-locality if present."""
+    raw_title = (p.title or "").strip()
+    sector_match = re.search(r'\b(sector\s*\d+\s+[^—]+)', raw_title, re.IGNORECASE)
+    if sector_match:
+        return sector_match.group(1).strip().title()
+
+    addr = (p.address or "").strip()
+    if addr and addr.lower() not in ["bengaluru", "bangalore"]:
+        clean_addr = re.sub(r',\s*(bengaluru|bangalore|karnataka|560\d{3})\b', '', addr, flags=re.I).strip()
+        if clean_addr:
+            return clean_addr.title()
+            
+    return (p.locality or "Bengaluru").title()
+
 def enrich_property_out(p: Property) -> PropertyOut:
     """Enrich property model with calculated fields for API response."""
     price_sqft = round(p.price / p.area_sqft, 2) if p.area_sqft > 0 else 0
     price_formatted = format_indian_currency(p.price)
     
+    # Determine coordinate status
+    if p.source_type == "historical_dataset" or p.source == "Bengaluru_House_Data.csv":
+        coord_status = "LOCALITY_APPROXIMATE"
+    elif p.latitude == 0 and p.longitude == 0:
+        coord_status = "UNAVAILABLE"
+    else:
+        coord_status = "EXACT"
+        
+    # Determine property type source
+    is_historical = (p.source_type == "historical_dataset" or p.source == "Bengaluru_House_Data.csv")
+    ptype_src = "inferred" if is_historical else "user_provided"
+    
+    # Determine title & society normalization
+    raw_title = (p.title or "").strip()
+    loc_str = extract_location(p)
+    
+    REAL_BUILDERS = ["prestige", "sobha", "salarpuria", "brigade", "godrej", "assetz", "puravankara", "l&t", "embassy", "shriram", "mantri", "dharani", "signature", "century", "provident"]
+    is_real_builder = any(b in raw_title.lower() for b in REAL_BUILDERS)
+    
+    if is_real_builder:
+        final_title = raw_title
+        society_val = raw_title
+        property_type_val = p.property_type
+    elif not is_historical and not is_anonymized_code(raw_title):
+        final_title = raw_title
+        society_val = raw_title
+        property_type_val = p.property_type
+    else:
+        # Rule B & C: Transparent fallback using actual dataset fields (size + location)
+        if "bedroom" in raw_title.lower() or (p.bhk and p.bhk > 4):
+            size_str = f"{p.bhk} Bedroom"
+        elif p.bhk and p.bhk > 0:
+            size_str = f"{p.bhk} BHK"
+        else:
+            size_str = ""
+            
+        if size_str:
+            final_title = f"{size_str} in {loc_str}"
+        else:
+            final_title = f"Property in {loc_str}"
+            
+        society_val = None
+        property_type_val = p.property_type
+
+    # Filter out synthetic seed images (only genuine uploaded or dataset images allowed)
+    raw_images = [img.image_path for img in p.property_images] if p.property_images else (p.images or [])
+    filtered_images = [img for img in raw_images if isinstance(img, str) and "unsplash.com" not in img and img.strip()]
+
+    # Phone contact privacy and fallback
+    SEED_PHONES = {"+91 98860 12345", "+91 98450 67890", "+91 99001 88345", "+91 98110 99887", "+91 98801 33456", "+91 97400 22341", "+91 98440 66789", "+91 98866 55432", "+91 98451 77654", "+91 98800 33210"}
+    if p.source_type == "owner_listing":
+        phone_val = "[Redacted - Reveal via contact button]"
+    elif p.owner_phone and p.owner_phone.strip() and p.owner_phone not in SEED_PHONES and p.owner_phone != "Contact information unavailable":
+        phone_val = p.owner_phone
+    else:
+        phone_val = "Contact information unavailable"
+
     out_dict = {
         "id": p.id,
         "user_id": p.user_id,
-        "title": p.title,
-        "property_type": p.property_type,
+        "title": final_title,
+        "property_type": property_type_val,
         "listing_type": p.listing_type or "Buy",
         "bhk": p.bhk,
         "area_sqft": p.area_sqft,
@@ -86,14 +201,14 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "locality": p.locality or "",
         "latitude": p.latitude,
         "longitude": p.longitude,
-        "owner_name": p.owner_name or "PropPulse Verified Owner",
-        "owner_phone": "[Redacted - Reveal via contact button]" if (p.source == "PropPulse Direct" or p.source_type == "owner_listing") else (p.owner_phone or "+91 98860 12345"),
-        "images": [img.image_path for img in p.property_images] if p.property_images else (p.images or []),
+        "owner_name": p.owner_name if p.source_type == "owner_listing" else "Historical Dataset",
+        "owner_phone": phone_val,
+        "images": filtered_images,
         "nearby_places": p.nearby_places or [],
         "street_view_available": bool(p.street_view_available),
         "seller_type": p.seller_type or "Owner",
-        "seller_name": p.seller_name or "PropPulse Verified Seller",
-        "phone": "[Redacted - Reveal via contact button]" if (p.source == "PropPulse Direct" or p.source_type == "owner_listing") else (p.phone or "+91 98860 12345"),
+        "seller_name": p.seller_name if p.source_type == "owner_listing" else "Historical Dataset",
+        "phone": phone_val,
         "verification_status": p.verification_status or "Verified",
         "source_type": p.source_type or "demo_dataset",
         "source": p.source or "PropPulse Direct",
@@ -102,6 +217,9 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "verified": bool(p.verified),
         "price_per_sqft": price_sqft,
         "price_formatted": price_formatted,
+        "coordinate_status": coord_status,
+        "property_type_source": ptype_src,
+        "society": society_val,
         "uploaded_images": p.property_images or [],
         "created_at": p.created_at
     }
@@ -139,8 +257,7 @@ def auto_generate_locality_sample_properties(
 
     for i, spec in enumerate(specs):
         builder = BUILDERS[i % len(BUILDERS)]
-        owner = OWNERS[i % len(OWNERS)]
-        images = IMAGES_POOL[i % len(IMAGES_POOL)]
+        images = []
         
         area = spec["area"]
         price = round(base_price_sqft * area * (1 + (i * 0.1)), -4)
@@ -177,14 +294,14 @@ def auto_generate_locality_sample_properties(
             locality=locality_name.title(),
             latitude=round(p_lat, 6),
             longitude=round(p_lon, 6),
-            owner_name=owner[0],
-            owner_phone=owner[1],
+            owner_name="PropPulse Verified Owner",
+            owner_phone="Contact information unavailable",
             images=images,
             nearby_places=[],
             street_view_available=(i % 2 == 0),
             seller_type="Owner" if i % 2 == 0 else "Broker",
-            seller_name=owner[0],
-            phone=owner[1],
+            seller_name="PropPulse Verified Seller",
+            phone="Contact information unavailable",
             verification_status="Verified",
             source_type="demo_dataset"
         )
@@ -193,6 +310,117 @@ def auto_generate_locality_sample_properties(
 
     db.commit()
     return created_list
+
+def parse_natural_query(query_str: str):
+    """Parse natural language real estate search queries into filter parameters."""
+    query_str = query_str.lower().strip()
+    parsed = {}
+    
+    # 1. Parse BHK configuration (e.g., 3 BHK, 2 bedroom)
+    bhk_match = re.search(r"(\d+)\s*(?:bhk|bedroom|bed|room)", query_str)
+    if bhk_match:
+        parsed["bhk"] = int(bhk_match.group(1))
+        
+    # 2. Parse listing type (buy or rent) using word boundaries
+    if re.search(r"\b(rent|rental|renting|rented)\b", query_str):
+        parsed["listing_type"] = "Rent"
+    elif re.search(r"\b(buy|sale|purchase|buying|selling)\b", query_str):
+        parsed["listing_type"] = "Buy"
+        
+    # 3. Parse property type using word boundaries
+    if re.search(r"\b(apartment|flat|flats|apartments)\b", query_str):
+        parsed["property_type"] = "Apartment"
+    elif re.search(r"\b(villa|villas)\b", query_str):
+        parsed["property_type"] = "Villa"
+    elif re.search(r"\b(house|independent house|independent houses|individual house|independent|individual)\b", query_str):
+        parsed["property_type"] = "Independent House"
+    elif re.search(r"\b(plot|plots|land|lands)\b", query_str) or (re.search(r"\blayout\b", query_str) and "hsr" not in query_str):
+        parsed["property_type"] = "Plot"
+        
+    # Helper to clean unit
+    def parse_money(val_str, unit_str):
+        try:
+            val = float(val_str)
+            if "cr" in unit_str or "crore" in unit_str:
+                return val * 10000000.0
+            elif "lakh" in unit_str or "lk" in unit_str or "lac" in unit_str:
+                return val * 100000.0
+            return val
+        except Exception:
+            return None
+
+    # 4. Parse budget/price constraints
+    # E.g. "under 1 crore", "under 60 lakh", "between 1.2 and 2 crore"
+    max_match = re.search(r"(?:under|below|less than|max|within|budget|<=)\s*([\d\.]+)\s*(crore|cr|lakh|lakhs|lacs|lk|lac)", query_str)
+    if max_match:
+        parsed["max_price"] = parse_money(max_match.group(1), max_match.group(2))
+        
+    min_match = re.search(r"(?:above|more than|greater than|min|>=)\s*([\d\.]+)\s*(crore|cr|lakh|lakhs|lacs|lk|lac)", query_str)
+    if min_match:
+        parsed["min_price"] = parse_money(min_match.group(1), min_match.group(2))
+
+    # 5. Parse area ranges (e.g. between 1200 and 1800 sqft)
+    between_area = re.search(r"between\s+(\d+)\s+and\s+(\d+)\s*(?:sqft|sq.ft|sq ft|sq. ft|sq)", query_str)
+    if between_area:
+        parsed["min_area"] = float(between_area.group(1))
+        parsed["max_area"] = float(between_area.group(2))
+    else:
+        above_area = re.search(r"(?:above|more than|greater than|min|>=)\s*(\d+)\s*(?:sqft|sq.ft|sq ft|sq. ft|sq)", query_str)
+        if above_area:
+            parsed["min_area"] = float(above_area.group(1))
+        below_area = re.search(r"(?:under|below|less than|max|<=)\s*(\d+)\s*(?:sqft|sq.ft|sq ft|sq. ft|sq)", query_str)
+        if below_area:
+            parsed["max_area"] = float(below_area.group(1))
+
+    # 6. Locality matching (Whitefield, Koramangala, etc.)
+    # Remove filters and helper keywords to extract locality candidate using word boundaries
+    clean_words = query_str
+    clean_words = re.sub(r"\b\d+\s*(?:bhk|bedroom|bed|room|rooms)\b", "", clean_words)
+    clean_words = re.sub(r"\b(?:under|below|less than|above|more than|greater than|between|and|min|max|budget|<=|>=)\s*[\d\.]+\s*(?:crore|cr|lakh|lakhs|lacs|lk|lac|sqft|sq.ft|sq ft|sq. ft|sq)\b", "", clean_words)
+    clean_words = re.sub(r"\b(?:apartment|apartments|flat|flats|villa|villas|house|houses|plot|plots|land|lands|buy|rent|rental|sale|purchase|in|near|properties)\b", "", clean_words)
+    
+    locality_candidate = clean_words.strip()
+    if locality_candidate:
+        matched_locality = None
+        # Mapped canonical locality names
+        for canonical_name in LOCALITY_COORDINATES.keys():
+            if canonical_name in locality_candidate:
+                # Resolve to correct representation
+                # Whitefield, Koramangala, etc.
+                if canonical_name == "koramangala": matched_locality = "Koramangala"
+                elif canonical_name == "electronic city": matched_locality = "Electronic City"
+                elif canonical_name == "whitefield": matched_locality = "Whitefield"
+                elif canonical_name == "hsr layout": matched_locality = "HSR Layout"
+                elif canonical_name == "indiranagar": matched_locality = "Indiranagar"
+                elif canonical_name == "marathahalli": matched_locality = "Marathahalli"
+                elif canonical_name == "bellandur": matched_locality = "Bellandur"
+                elif canonical_name == "sarjapur road": matched_locality = "Sarjapur Road"
+                elif canonical_name == "jp nagar": matched_locality = "JP Nagar"
+                elif canonical_name == "jayanagar": matched_locality = "Jayanagar"
+                elif canonical_name == "banashankari": matched_locality = "Banashankari"
+                elif canonical_name == "hebbal": matched_locality = "Hebbal"
+                elif canonical_name == "yelahanka": matched_locality = "Yelahanka"
+                elif canonical_name == "kr puram": matched_locality = "KR Puram"
+                elif canonical_name == "mahadevapura": matched_locality = "Mahadevapura"
+                elif canonical_name == "btm layout": matched_locality = "BTM Layout"
+                elif canonical_name == "bannerghatta road": matched_locality = "Bannerghatta Road"
+                elif canonical_name == "thanisandra": matched_locality = "Thanisandra"
+                elif canonical_name == "hennur": matched_locality = "Hennur"
+                elif canonical_name == "vijayanagar": matched_locality = "Vijayanagar"
+                elif canonical_name == "rajajinagar": matched_locality = "Rajajinagar"
+                elif canonical_name == "malleshwaram": matched_locality = "Malleshwaram"
+                elif canonical_name == "basavanagudi": matched_locality = "Basavanagudi"
+                elif canonical_name == "brookefield": matched_locality = "Brookefield"
+                elif canonical_name == "chandapura": matched_locality = "Chandapura"
+                break
+        if not matched_locality:
+            words = [w.strip() for w in locality_candidate.split() if w.strip()]
+            if words:
+                matched_locality = " ".join([w.capitalize() for w in words])
+        if matched_locality:
+            parsed["locality"] = matched_locality
+            
+    return parsed
 
 @router.get("/", response_model=PropertyListOut)
 def list_properties(
@@ -208,84 +436,105 @@ def list_properties(
     parking: Optional[str] = Query(None),
     lat: Optional[float] = Query(None),
     lon: Optional[float] = Query(None),
+    page: Optional[int] = Query(None, description="Page index"),
+    page_size: Optional[int] = Query(None, description="Page size"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, le=100),
     db: Session = Depends(get_db)
 ):
-    """Retrieve property listings with filter parameters, locality extraction & dynamic sample generation."""
+    """Retrieve property listings using strict SQL constraints and Natural Language parsing options."""
+    # Resolve FastAPI Query objects if called directly as a function in tests
+    from fastapi.params import Query as FastAPIQuery
+    
+    def resolve_val(v):
+        if isinstance(v, FastAPIQuery):
+            return v.default
+        if hasattr(v, "__class__") and (v.__class__.__name__ == "QueryInfo" or v.__class__.__name__ == "Query"):
+            return getattr(v, "default", None)
+        # Check if v is a string that starts with QueryInfo representation in some test settings
+        if str(type(v)).find("fastapi.params.Query") != -1:
+            return getattr(v, "default", None)
+        return v
+
+    query = resolve_val(query)
+    property_type = resolve_val(property_type)
+    listing_type = resolve_val(listing_type)
+    bhk = resolve_val(bhk)
+    min_price = resolve_val(min_price)
+    max_price = resolve_val(max_price)
+    min_area = resolve_val(min_area)
+    max_area = resolve_val(max_area)
+    furnishing = resolve_val(furnishing)
+    parking = resolve_val(parking)
+    page = resolve_val(page)
+    page_size = resolve_val(page_size)
+    
+    skip = resolve_val(skip)
+    if skip is None: skip = 0
+    limit = resolve_val(limit)
+    if limit is None: limit = 50
+
     q = db.query(Property)
     
-    clean_locality = None
+    parsed_filters = {}
     if query and isinstance(query, str) and query.strip():
-        # Extract primary locality keyword e.g. "Koramangala, Bengaluru..." -> "Koramangala"
-        raw_query = query.strip()
-        clean_locality = raw_query.split(',')[0].strip()
+        parsed_filters = parse_natural_query(query)
+
+    # 1. Locality strict filter
+    final_locality = parsed_filters.get("locality")
+    if final_locality:
+        search_pattern = f"%{final_locality}%"
+        q = q.filter(Property.locality.ilike(search_pattern))
+    elif query and isinstance(query, str) and query.strip():
+        # Fallback to splitting by comma for traditional locality searches
+        clean_locality = query.strip().split(',')[0].strip()
         search_pattern = f"%{clean_locality}%"
+        q = q.filter(Property.locality.ilike(search_pattern))
         
-        q = q.filter(
-            (Property.locality.ilike(search_pattern)) | 
-            (Property.address.ilike(search_pattern)) |
-            (Property.title.ilike(search_pattern))
-        )
+    # 2. Strict constraint filters
+    final_property_type = property_type or parsed_filters.get("property_type")
+    if final_property_type and final_property_type != "All":
+        q = q.filter(Property.property_type.ilike(final_property_type))
         
-    if property_type and isinstance(property_type, str) and property_type != "All":
-        q = q.filter(Property.property_type.ilike(property_type))
-    if listing_type and isinstance(listing_type, str) and listing_type != "All":
-        q = q.filter(Property.listing_type.ilike(listing_type))
-    if isinstance(bhk, int):
-        q = q.filter(Property.bhk == bhk)
-    if isinstance(min_price, (int, float)):
-        q = q.filter(Property.price >= min_price)
-    if isinstance(max_price, (int, float)):
-        q = q.filter(Property.price <= max_price)
-    if isinstance(min_area, (int, float)):
-        q = q.filter(Property.area_sqft >= min_area)
-    if isinstance(max_area, (int, float)):
-        q = q.filter(Property.area_sqft <= max_area)
-    if furnishing and isinstance(furnishing, str) and furnishing != "All":
+    final_listing_type = listing_type or parsed_filters.get("listing_type")
+    if final_listing_type and final_listing_type != "All":
+        q = q.filter(Property.listing_type.ilike(final_listing_type))
+        
+    final_bhk = bhk if bhk is not None else parsed_filters.get("bhk")
+    if isinstance(final_bhk, int):
+        q = q.filter(Property.bhk == final_bhk)
+        
+    final_min_price = min_price if min_price is not None else parsed_filters.get("min_price")
+    if isinstance(final_min_price, (int, float)):
+        q = q.filter(Property.price >= final_min_price)
+        
+    final_max_price = max_price if max_price is not None else parsed_filters.get("max_price")
+    if isinstance(final_max_price, (int, float)):
+        q = q.filter(Property.price <= final_max_price)
+        
+    final_min_area = min_area if min_area is not None else parsed_filters.get("min_area")
+    if isinstance(final_min_area, (int, float)):
+        q = q.filter(Property.area_sqft >= final_min_area)
+        
+    final_max_area = max_area if max_area is not None else parsed_filters.get("max_area")
+    if isinstance(final_max_area, (int, float)):
+        q = q.filter(Property.area_sqft <= final_max_area)
+        
+    if furnishing and furnishing != "All":
         q = q.filter(Property.furnishing.ilike(furnishing))
-    if parking and isinstance(parking, str) and parking != "All":
+    if parking and parking != "All":
         q = q.filter(Property.parking.ilike(parking))
+
+    # Apply pagination skip/limit
+    total = q.count()
+    if page is not None and page_size is not None:
+        skip = (page - 1) * page_size
+        limit = page_size
         
     properties = q.order_by(Property.created_at.desc()).offset(skip).limit(limit).all()
-    
-    # Auto-seed if specific locality query returned 0 properties
-    if len(properties) == 0 and clean_locality and len(clean_locality) > 2:
-        auto_generate_locality_sample_properties(clean_locality, db, lat=lat, lon=lon)
-        
-        # Re-query
-        search_pattern = f"%{clean_locality}%"
-        q_new = db.query(Property).filter(
-            (Property.locality.ilike(search_pattern)) | 
-            (Property.address.ilike(search_pattern)) |
-            (Property.title.ilike(search_pattern))
-        )
-        
-        # Re-apply filters to newly generated properties
-        if property_type and isinstance(property_type, str) and property_type != "All":
-            q_new = q_new.filter(Property.property_type.ilike(property_type))
-        if listing_type and isinstance(listing_type, str) and listing_type != "All":
-            q_new = q_new.filter(Property.listing_type.ilike(listing_type))
-        if isinstance(bhk, int):
-            q_new = q_new.filter(Property.bhk == bhk)
-        if isinstance(min_price, (int, float)):
-            q_new = q_new.filter(Property.price >= min_price)
-        if isinstance(max_price, (int, float)):
-            q_new = q_new.filter(Property.price <= max_price)
-        if isinstance(min_area, (int, float)):
-            q_new = q_new.filter(Property.area_sqft >= min_area)
-        if isinstance(max_area, (int, float)):
-            q_new = q_new.filter(Property.area_sqft <= max_area)
-        if furnishing and isinstance(furnishing, str) and furnishing != "All":
-            q_new = q_new.filter(Property.furnishing.ilike(furnishing))
-        if parking and isinstance(parking, str) and parking != "All":
-            q_new = q_new.filter(Property.parking.ilike(parking))
-
-        properties = q_new.order_by(Property.created_at.desc()).offset(skip).limit(limit).all()
-
-    total = len(properties)
     enriched_items = [enrich_property_out(p) for p in properties]
-    return PropertyListOut(items=enriched_items, total=total)
+    return PropertyListOut(items=enriched_items, total=total, page=page, page_size=page_size)
+
 
 @router.get("/{id}", response_model=PropertyOut)
 async def get_property_by_id(
@@ -376,6 +625,14 @@ async def create_direct_listing(
             lat = res_lat
             lon = res_lon
 
+    # Fetch nearby places using coordinates resolved
+    places = []
+    try:
+        from app.services.geoapify_service import GeoapifyService
+        places = await GeoapifyService.get_nearby_places(lat=lat, lon=lon, radius_meters=5000)
+    except Exception as e:
+        print(f"Error fetching nearby places during listing creation: {e}")
+
     # 3. Create property listing instance with default pending metadata
     p = Property(
         user_id=current_user.id,
@@ -400,13 +657,13 @@ async def create_direct_listing(
         latitude=lat,
         longitude=lon,
         owner_name=payload.owner_name or current_user.full_name,
-        owner_phone=payload.owner_phone or "+91 98860 12345",
+        owner_phone=payload.owner_phone or "Contact information unavailable",
         images=payload.images or [],
-        nearby_places=[],
+        nearby_places=places or [],
         street_view_available=False,
         seller_type=payload.seller_type or "Owner",
         seller_name=payload.seller_name or payload.owner_name or current_user.full_name,
-        phone=payload.phone or payload.owner_phone or "+91 98860 12345",
+        phone=payload.phone or payload.owner_phone or "Contact information unavailable",
         verification_status="Pending Verification",
         source_type="owner_listing",
         source="PropPulse Direct",
@@ -507,5 +764,94 @@ def get_property_contact_details(
         "seller_name": prop.seller_name or "PropPulse Verified Seller",
         "phone": prop.phone or "+91 98860 12345"
     }
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    """Retrieve aggregate database statistics for the main dashboard dashboard."""
+    from sqlalchemy import func
+    
+    total_properties = db.query(Property).count()
+    buy_properties = db.query(Property).filter(Property.listing_type.ilike("Buy")).count()
+    rent_properties = db.query(Property).filter(Property.listing_type.ilike("Rent")).count()
+    
+    apartments = db.query(Property).filter(Property.property_type.ilike("Apartment")).count()
+    villas = db.query(Property).filter(Property.property_type.ilike("Villa")).count()
+    independent_houses = db.query(Property).filter(Property.property_type.ilike("Independent House")).count()
+    
+    localities_covered = db.query(Property.locality).distinct().count()
+    
+    verified_direct = db.query(Property).filter(
+        Property.source_type == "owner_listing",
+        Property.verification_status == "Verified"
+    ).count()
+    
+    dataset_listings = db.query(Property).filter(
+        Property.source_type == "historical_dataset"
+    ).count()
+    
+    # Top localities count
+    top_loc_query = db.query(Property.locality, func.count(Property.id)).group_by(Property.locality).order_by(func.count(Property.id).desc()).limit(10).all()
+    top_localities = [{"name": loc or "Unknown", "count": count} for loc, count in top_loc_query]
+    
+    return {
+        "total_properties": total_properties,
+        "buy_properties": buy_properties,
+        "rent_properties": rent_properties,
+        "apartments": apartments,
+        "villas": villas,
+        "independent_houses": independent_houses,
+        "localities_covered": localities_covered,
+        "verified_direct": verified_direct,
+        "dataset_listings": dataset_listings,
+        "top_localities": top_localities
+    }
+
+@router.get("/dataset-stats")
+def get_dataset_stats(
+    current_user: User = Depends(get_current_user_with_role("ADMIN")),
+    db: Session = Depends(get_db)
+):
+    """Retrieve data quality statistics for admin review."""
+    from sqlalchemy import func
+    
+    total_properties = db.query(Property).count()
+    dataset_listings = db.query(Property).filter(Property.source_type == "historical_dataset").count()
+    direct_listings = db.query(Property).filter(Property.source_type == "owner_listing").count()
+    
+    # Missing coordinates ( बेंगलुरु center check )
+    missing_coords = db.query(Property).filter(
+        Property.latitude.between(12.95, 12.99),
+        Property.longitude.between(77.57, 77.61)
+    ).count()
+    
+    # Missing images
+    missing_images = db.query(Property).filter(
+        (Property.images == "[]") | (Property.images == "") | (Property.images.is_(None))
+    ).count()
+    
+    # Missing contact
+    missing_contact = db.query(Property).filter(
+        (Property.owner_phone == "") | (Property.owner_phone.is_(None))
+    ).count()
+    
+    # Locality distribution
+    locality_dist = db.query(Property.locality, func.count(Property.id)).group_by(Property.locality).order_by(func.count(Property.id).desc()).limit(15).all()
+    locality_distribution = [{"locality": loc or "Unknown", "count": count} for loc, count in locality_dist]
+    
+    # Source distribution
+    source_dist = db.query(Property.source, func.count(Property.id)).group_by(Property.source).all()
+    source_distribution = [{"source": src or "Unknown", "count": count} for src, count in source_dist]
+    
+    return {
+        "total_properties": total_properties,
+        "dataset_listings": dataset_listings,
+        "direct_listings": direct_listings,
+        "missing_coordinates": missing_coords,
+        "missing_images": missing_images,
+        "missing_contact": missing_contact,
+        "locality_distribution": locality_distribution,
+        "source_distribution": source_distribution
+    }
+
 
 

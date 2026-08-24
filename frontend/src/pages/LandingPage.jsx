@@ -122,7 +122,7 @@ export const LandingPage = () => {
               </div>
               <h3 className="text-xl font-bold text-white font-outfit">Categorized GIS Places</h3>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Automatically aggregate nearby schools, hospitals, metro stations, bus stops, restaurants, malls, banks, parks, and colleges within a 5km radius.
+                Automatically aggregate nearby schools, hospitals, metro stations, bus stops, restaurants, malls, banks, and colleges within a 5km radius.
               </p>
             </div>
 

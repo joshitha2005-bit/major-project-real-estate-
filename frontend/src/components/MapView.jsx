@@ -35,7 +35,6 @@ const placeCategoryIcons = {
   "Restaurants": "🍽️",
   "Shopping Malls": "🛍️",
   "Banks": "🏦",
-  "Parks": "🌳",
   "Amenity": "📍"
 };
 

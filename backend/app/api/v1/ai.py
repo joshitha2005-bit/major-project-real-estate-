@@ -30,6 +30,14 @@ async def analyze_property_full_ai(
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
 
+    if not prop.nearby_places or len(prop.nearby_places) == 0:
+        from app.services.geoapify_service import GeoapifyService
+        places = await GeoapifyService.get_nearby_places(lat=prop.latitude, lon=prop.longitude, radius_meters=5000)
+        if places:
+            prop.nearby_places = places
+            db.commit()
+            db.refresh(prop)
+
     enriched = enrich_property_out(prop).model_dump()
 
     # 1. Computer Vision Image Analysis

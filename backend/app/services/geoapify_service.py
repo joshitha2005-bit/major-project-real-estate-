@@ -10,7 +10,6 @@ _SINGULAR_LABEL: Dict[str, str] = {
     "Hospitals":      "Hospital",
     "Metro Stations": "Metro Station",
     "Bus Stops":      "Bus Stop",
-    "Parks":          "Park",
     "Restaurants":    "Restaurant",
     "Shopping Malls": "Shopping Mall",
     "Banks":          "Bank",
@@ -247,16 +246,10 @@ class GeoapifyService:
         category_taxonomy_map = {
             "Schools":        ["education.school"],
             "Colleges":       ["education.college", "education.university"],
-            # FIX: 'healthcare.clinic' is not a valid Geoapify category (returns HTTP 400).
-            # Replaced with 'healthcare.clinic_or_praxis' which is the correct taxonomy string
-            # and verified to return HTTP 200 with real clinic POIs.
             "Hospitals":      ["healthcare.hospital", "healthcare.clinic_or_praxis"],
             "Metro Stations": ["building.transportation", "public_transport.subway", "public_transport.train"],
             "Bus Stops":      ["public_transport.bus"],
-            "Parks":          ["leisure.park", "leisure.playground"],
             "Restaurants":    ["catering.restaurant"],
-            # FIX: 'commercial.supermarket' returned ordinary provision stores and grocery shops,
-            # not actual shopping malls. Removed. Only genuine mall POIs are included.
             "Shopping Malls": ["commercial.shopping_mall"],
             "Banks":          ["service.financial.bank", "service.financial.atm"]
         }

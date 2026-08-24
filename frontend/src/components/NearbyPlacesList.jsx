@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   GraduationCap, Hospital, Train, Utensils, 
-  ShoppingBag, Landmark, Trees, Bus, MapPin, Filter, Radius
+  ShoppingBag, Landmark, Trees, Bus, MapPin, Filter, AlertTriangle 
 } from 'lucide-react';
 
 const CATEGORY_MAP = {
@@ -14,15 +14,13 @@ const CATEGORY_MAP = {
   "Restaurants":    { icon: Utensils,       color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
   "Shopping Malls": { icon: ShoppingBag,    color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
   "Banks":          { icon: Landmark,       color: "text-emerald-400",bg: "bg-emerald-500/10 border-emerald-500/20" },
-  "Parks":          { icon: Trees,          color: "text-green-400",  bg: "bg-green-500/10 border-green-500/20" },
 };
 
 const CATEGORIES_LIST = [
   "All", "Schools", "Hospitals", "Metro Stations", "Restaurants",
-  "Shopping Malls", "Banks", "Parks", "Colleges", "Bus Stops"
+  "Shopping Malls", "Banks", "Colleges", "Bus Stops"
 ];
 
-// Generic / unclean names that should not be shown
 const GENERIC_NAMES = new Set([
   'point of interest', 'unnamed', 'unnamed road', 'unknown',
   'building', 'structure', 'place', 'area', 'zone', 'road',
@@ -41,26 +39,21 @@ export const NearbyPlacesList = ({
   loading = false,
   radius = 5000,
   onRadiusChange = null,
+  coordinateStatus = "EXACT",
+  apiError = false,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // 1. Filter out generic names
   const cleanPlaces = places.filter(p => !isGenericName(p.name));
-
-  // 2. Enforce distance cap matching selected radius (in case backend returns more)
   const radiusCapped = cleanPlaces.filter(p => p.distance_meters <= radius);
-
-  // 3. Category filter
   const filteredPlaces = selectedCategory === "All"
     ? radiusCapped
     : radiusCapped.filter(p => p.category === selectedCategory);
 
-  // 4. Sort by distance (nearest first)
   const sortedPlaces = [...filteredPlaces].sort(
     (a, b) => a.distance_meters - b.distance_meters
   );
 
-  // Category counts for quick stats
   const categoryCounts = {};
   radiusCapped.forEach(p => {
     categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
@@ -81,7 +74,6 @@ export const NearbyPlacesList = ({
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Radius Toggle */}
           {onRadiusChange && (
             <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
               {[
@@ -103,15 +95,22 @@ export const NearbyPlacesList = ({
             </div>
           )}
 
-          {/* Found count badge */}
           <div className="text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 whitespace-nowrap">
             Found <span className="font-bold text-brand-400">{sortedPlaces.length}</span> places
           </div>
         </div>
       </div>
 
-      {/* Quick stat chips — only when data is present */}
-      {!loading && radiusCapped.length > 0 && (
+      {/* Coordinate status disclaimer badge */}
+      {coordinateStatus === "LOCALITY_APPROXIMATE" && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-center gap-2 font-medium">
+          <MapPin className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <span>Amenities calculated around approximate locality</span>
+        </div>
+      )}
+
+      {/* Quick stat chips */}
+      {!loading && !apiError && radiusCapped.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {Object.entries(categoryCounts).map(([cat, count]) => {
             const info = CATEGORY_MAP[cat] || CATEGORY_MAP["All"];
@@ -166,6 +165,18 @@ export const NearbyPlacesList = ({
           <div className="w-8 h-8 mx-auto border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-xs text-slate-400">
             Searching within {radius >= 1000 ? `${radius / 1000} km` : `${radius} m`}...
+          </p>
+        </div>
+      ) : apiError ? (
+        <div className="py-12 text-center bg-slate-900/40 rounded-xl border border-slate-800/60 space-y-2">
+          <div className="w-12 h-12 bg-rose-950/20 rounded-full flex items-center justify-center mx-auto border border-rose-500/20">
+            <AlertTriangle className="w-6 h-6 text-rose-400" />
+          </div>
+          <p className="text-sm font-bold text-white">
+            Amenities temporarily unavailable
+          </p>
+          <p className="text-xs text-slate-400 font-medium">
+            Failed to connect to Geoapify GIS service. Please try again later.
           </p>
         </div>
       ) : sortedPlaces.length === 0 ? (

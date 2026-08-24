@@ -71,6 +71,7 @@ export const PropertyDetailsPage = () => {
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const [nearbyRadius, setNearbyRadius] = useState(5000); // metres: 1000 or 5000
+  const [nearbyError, setNearbyError] = useState(false);
 
   useEffect(() => {
     // Clear old property data immediately to prevent state leakage
@@ -116,6 +117,7 @@ export const PropertyDetailsPage = () => {
     const fetchNearby = async () => {
       setNearbyLoading(true);
       setNearbyPlaces([]);
+      setNearbyError(false);
       try {
         const places = await locationService.getNearbyPlaces(
           property.latitude,
@@ -138,6 +140,7 @@ export const PropertyDetailsPage = () => {
       } catch (err) {
         console.error('Failed to fetch nearby places:', err);
         setNearbyPlaces([]);
+        setNearbyError(true);
       } finally {
         setNearbyLoading(false);
       }
@@ -258,8 +261,9 @@ export const PropertyDetailsPage = () => {
     return parts.join(" ");
   };
 
-  const hasMultipleImages = property.images && property.images.length > 1;
-  const hasImages = property.images && property.images.length > 0;
+  const isHistorical = property && (property.source_type === 'historical_dataset' || property.source === 'Bengaluru_House_Data.csv');
+  const hasMultipleImages = !isHistorical && property.images && property.images.length > 1;
+  const hasImages = !isHistorical && property.images && property.images.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-dark-950 text-slate-100">
@@ -320,13 +324,20 @@ export const PropertyDetailsPage = () => {
                 {property.property_type || "Apartment"}
               </span>
               <span className="px-2.5 py-0.5 rounded-md bg-accent-500/10 text-accent-300 border border-accent-500/20 text-[10px] font-extrabold uppercase tracking-wider">
-                {property.listing_type || "Buy"}
+                {property.listing_type || "Dataset"}
               </span>
-              <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[10px] font-extrabold uppercase tracking-wider">
-                {property.verification_status || "Verified"}
-              </span>
-              <span className="px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700/80 text-[10px] font-semibold tracking-wider font-mono">
-                {property.source_type === 'demo_dataset' ? 'Research Listing' : 'Owner Listing'}
+              <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider border ${
+                isHistorical
+                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                  : property.verification_status === 'Verified'
+                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                    : 'bg-brand-500/10 text-brand-300 border-brand-500/20'
+              }`}>
+                {isHistorical
+                  ? 'Historical Dataset'
+                  : property.verification_status === 'Verified'
+                    ? 'Verified Direct Listing'
+                    : 'Pending Verification'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold font-outfit text-white leading-tight">
@@ -545,6 +556,26 @@ export const PropertyDetailsPage = () => {
               <span className="text-slate-500 block text-[10px] uppercase font-bold">Listing Locality</span>
               <span className="text-sm font-bold text-brand-400 truncate block">{property.locality || "Not available"}</span>
             </div>
+            {property.society && (
+              <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Society Name</span>
+                <span className="text-sm font-bold text-white truncate block">{property.society}</span>
+              </div>
+            )}
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">Coordinate Accuracy</span>
+              <span className={`text-sm font-bold truncate block ${property.coordinate_status === 'EXACT' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {property.coordinate_status === 'EXACT' ? 'Exact location' : 'Approximate locality'}
+              </span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">Classification</span>
+              <span className="text-sm font-bold text-slate-300 truncate block">Inferred ({property.property_type})</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-1">
+              <span className="text-slate-500 block text-[10px] uppercase font-bold">Source Provenance</span>
+              <span className="text-sm font-bold text-slate-350 truncate block">{isHistorical ? 'Historical Dataset' : 'PropPulse Direct'}</span>
+            </div>
           </div>
 
           {/* Amenities sub-section */}
@@ -593,9 +624,21 @@ export const PropertyDetailsPage = () => {
               />
             </div>
 
-            <div className="pt-2 flex items-center justify-between text-[11px] font-mono text-slate-500 border-t border-slate-800/60">
-              <span>Latitude: {property.latitude.toFixed(6)}</span>
-              <span>Longitude: {property.longitude.toFixed(6)}</span>
+            <div className="pt-3 border-t border-slate-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-4 text-[11px] font-mono text-slate-500">
+                <span>Latitude: {property.latitude.toFixed(6)}</span>
+                <span>Longitude: {property.longitude.toFixed(6)}</span>
+              </div>
+              {property.coordinate_status !== "UNAVAILABLE" && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${property.latitude},${property.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold transition-all"
+                >
+                  {property.coordinate_status === "EXACT" ? "Directions to property" : "Directions to locality"}
+                </a>
+              )}
             </div>
           </div>
 
@@ -606,6 +649,8 @@ export const PropertyDetailsPage = () => {
               loading={nearbyLoading}
               radius={nearbyRadius}
               onRadiusChange={setNearbyRadius}
+              coordinateStatus={property.coordinate_status}
+              apiError={nearbyError}
             />
           </div>
 

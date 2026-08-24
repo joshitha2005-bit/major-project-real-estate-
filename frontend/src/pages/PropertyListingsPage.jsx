@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { propertyService } from '../services/propertyService';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
+import { PropertyCard } from '../components/PropertyCard';
 import { 
   Building2, MapPin, Search, Plus, Filter, 
   ArrowRight, Loader2, IndianRupee, Layers 
@@ -254,77 +255,7 @@ export const PropertyListingsPage = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {properties.map((prop) => (
-              <div
-                key={prop.id}
-                className="glass-card glass-card-hover rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between group"
-              >
-                {/* Image & Badges */}
-                <div className="relative h-52 w-full overflow-hidden bg-slate-900">
-                  {prop.images && prop.images[0] ? (
-                    <img
-                      src={prop.images[0]}
-                      onError={(e) => { e.target.src = localFallbackImage; }}
-                      alt={prop.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-600">
-                      <Building2 className="w-12 h-12" />
-                    </div>
-                  )}
-
-                  <div className="absolute top-3 left-3 flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg bg-dark-950/80 backdrop-blur-md text-brand-300 text-[10px] font-bold uppercase tracking-wider border border-brand-500/30">
-                      {prop.property_type}
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg bg-dark-950/80 backdrop-blur-md text-accent-300 text-[10px] font-bold uppercase tracking-wider border border-accent-500/30">
-                      {prop.bhk} BHK
-                    </span>
-                  </div>
-
-                  <div className="absolute bottom-3 right-3 px-3 py-1 rounded-xl bg-dark-950/90 backdrop-blur-md border border-emerald-500/30">
-                    <span className="text-xs font-mono font-extrabold text-emerald-400">{prop.price_formatted}</span>
-                  </div>
-                </div>
-
-                {/* Body Content */}
-                <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
-                  <div className="space-y-1.5">
-                    <h3 className="text-base font-bold text-white line-clamp-1 group-hover:text-brand-300 transition-colors">
-                      {prop.title}
-                    </h3>
-                    <p className="text-xs text-slate-400 flex items-center gap-1 line-clamp-1">
-                      <MapPin className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
-                      <span>{prop.address}</span>
-                    </p>
-                  </div>
-
-                  {/* Attributes Bar */}
-                  <div className="pt-3 border-t border-slate-800/80 grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/60">
-                      <span className="text-[10px] text-slate-500 block">Area</span>
-                      <span className="font-bold text-slate-200">{prop.area_sqft} sqft</span>
-                    </div>
-                    <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/60">
-                      <span className="text-[10px] text-slate-500 block">Baths</span>
-                      <span className="font-bold text-slate-200">{prop.bathrooms}</span>
-                    </div>
-                    <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800/60">
-                      <span className="text-[10px] text-slate-500 block">Rate</span>
-                      <span className="font-bold text-emerald-400">₹{prop.price_per_sqft}</span>
-                    </div>
-                  </div>
-
-                  {/* Details Action Button */}
-                  <Link
-                    to={`/properties/${prop.id}`}
-                    className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-brand-600 text-slate-200 hover:text-white font-semibold text-xs border border-slate-800 hover:border-brand-500 transition-all flex items-center justify-center gap-1.5 mt-2"
-                  >
-                    <span>View Property GIS Report</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
+              <PropertyCard key={prop.id} property={prop} />
             ))}
           </div>
         )}

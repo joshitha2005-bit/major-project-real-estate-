@@ -27,6 +27,9 @@ export const DashboardPage = () => {
   const [activeTab, setActiveTab] = useState('portal'); // 'portal' or 'gis'
   const [allProperties, setAllProperties] = useState([]);
   const [verifyingId, setVerifyingId] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [datasetStats, setDatasetStats] = useState(null);
+
 
   const [searchInput, setSearchInput] = useState('');
 
@@ -150,6 +153,9 @@ export const DashboardPage = () => {
     
     const fetchProps = async () => {
       setLoadingProps(true);
+      // Clear old results immediately on search changes to prevent rendering stale properties
+      setLocalityProperties([]);
+      setLocalityStats(null);
       try {
         const params = {
           query: cleanLoc,
@@ -173,8 +179,14 @@ export const DashboardPage = () => {
         ]);
 
         if (isCurrent) {
+          // Verify returned properties match locality strictly
+          const matchedItems = (propsData?.items || []).filter(item => {
+            const queryClean = cleanLoc.toLowerCase().trim();
+            const itemLoc = (item.locality || "").toLowerCase().trim();
+            return itemLoc.includes(queryClean) || queryClean.includes(itemLoc);
+          });
           setLocalityStats(statsData);
-          setLocalityProperties(propsData?.items || []);
+          setLocalityProperties(matchedItems);
         }
       } catch (err) {
         console.error("Error fetching stats/props:", err);
@@ -199,18 +211,26 @@ export const DashboardPage = () => {
 
   const fetchHistoryAndSaved = async () => {
     try {
-      const [histData, savedData, propsData] = await Promise.all([
+      const [histData, savedData, propsData, dbStats] = await Promise.all([
         locationService.getSearchHistory(8),
         locationService.getSavedLocations(),
-        propertyService.getProperties({ limit: 100 })
+        propertyService.getProperties({ limit: 10 }),
+        propertyService.getDashboardStats()
       ]);
       setSearchHistory(histData || []);
       setSavedLocations(savedData || []);
       setAllProperties(propsData?.items || []);
+      setDashboardStats(dbStats || null);
+
+      if (user?.role === 'ADMIN') {
+        const dStats = await propertyService.getDatasetStats();
+        setDatasetStats(dStats || null);
+      }
     } catch (err) {
       console.error("Error fetching user history/saved:", err);
     }
   };
+
 
 
   const handleSearch = async (queryToSearch) => {
@@ -497,6 +517,70 @@ export const DashboardPage = () => {
               </div>
             </div>
 
+            {/* Live Market Index Statistics Panel */}
+            {dashboardStats && (
+              <div className="glass-card p-6 md:p-8 rounded-3xl border border-slate-850 space-y-6 bg-slate-900/10">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-850 pb-4">
+                  <div>
+                    <h3 className="text-base font-bold font-outfit text-white">Live Bengaluru Market Index Statistics</h3>
+                    <p className="text-xs text-slate-400 mt-1">Real-time indicators calculated directly from active SQLite catalog listings.</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Database Provenance</span>
+                    <span className="text-xs font-bold text-brand-300">Dataset ({dashboardStats.dataset_listings}) | Direct ({dashboardStats.verified_direct + allProperties.filter(p => p.verification_status === 'Pending Verification').length})</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Total Listings</span>
+                    <p className="text-2xl font-black text-white">{dashboardStats.total_properties}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Buy Listings</span>
+                    <p className="text-2xl font-black text-emerald-400">{dashboardStats.buy_properties}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Rent Listings</span>
+                    <p className="text-2xl font-black text-accent-400">{dashboardStats.rent_properties}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Apartments</span>
+                    <p className="text-2xl font-black text-blue-400">{dashboardStats.apartments}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Villas & Houses</span>
+                    <p className="text-2xl font-black text-purple-400">{dashboardStats.villas + dashboardStats.independent_houses}</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Localities</span>
+                    <p className="text-2xl font-black text-amber-400">{dashboardStats.localities_covered}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Top Market Densities by Locality</span>
+                  <div className="flex flex-wrap gap-2">
+                    {dashboardStats.top_localities.slice(0, 8).map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setSearchInput(item.name);
+                          handleSearch(item.name);
+                          setActiveTab('gis');
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-brand-500/10 border border-slate-850 hover:border-brand-500/30 text-xs font-semibold text-slate-300 transition-all flex items-center gap-2 group"
+                      >
+                        <span className="text-slate-500 group-hover:text-brand-400 font-bold">{idx + 1}.</span>
+                        <span className="text-slate-200 group-hover:text-white">{item.name}</span>
+                        <span className="px-2 py-0.5 rounded-md bg-slate-955 text-[10px] font-black text-brand-400 group-hover:bg-brand-500/20">{item.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Quick Gating CTAs Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Upgrade to Pro Card */}
@@ -591,6 +675,66 @@ export const DashboardPage = () => {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Data Quality Audit Panel */}
+              {user?.role === 'ADMIN' && datasetStats && (
+                <div className="glass-card p-6 rounded-3xl border border-slate-850 bg-slate-900/10 space-y-4 md:col-span-3">
+                  <div className="flex items-center justify-between border-b border-slate-850 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-brand-400" />
+                      <div>
+                        <h4 className="text-xs uppercase font-extrabold tracking-wider text-white">Database Health & Data Quality Audit Panel</h4>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Admin-only statistics monitoring data completeness & provenance.</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-slate-950 border border-slate-850 text-[10px] text-slate-400 font-mono">Role: ADMIN</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850">
+                      <span className="text-[9px] uppercase font-bold text-slate-500 block">Dataset Listings</span>
+                      <span className="text-base font-extrabold text-white">{datasetStats.dataset_listings}</span>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850">
+                      <span className="text-[9px] uppercase font-bold text-slate-500 block">Direct Postings</span>
+                      <span className="text-base font-extrabold text-white">{datasetStats.direct_listings}</span>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850">
+                      <span className="text-[9px] uppercase font-bold text-slate-500 block">Unmapped Geocoding</span>
+                      <span className="text-base font-extrabold text-amber-500">{datasetStats.missing_coordinates}</span>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850">
+                      <span className="text-[9px] uppercase font-bold text-slate-500 block">No Image Listings</span>
+                      <span className="text-base font-extrabold text-slate-450">{datasetStats.missing_images}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    <div className="space-y-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Listings Source Distribution</span>
+                      <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+                        {datasetStats.source_distribution.map((src, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-slate-950 border border-slate-850">
+                            <span className="text-slate-300 font-medium">{src.source}</span>
+                            <span className="font-extrabold text-brand-400">{src.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Localities Data Distribution</span>
+                      <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
+                        {datasetStats.locality_distribution.slice(0, 10).map((loc, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-slate-950 border border-slate-850">
+                            <span className="text-slate-300 font-medium">{loc.locality}</span>
+                            <span className="font-extrabold text-brand-400">{loc.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -945,21 +1089,31 @@ export const DashboardPage = () => {
                 <div>
                   <h3 className="text-xl font-bold font-outfit text-white flex items-center gap-2">
                     <Building2 className="w-5 h-5 text-brand-500" />
-                    Property Listings in {activeSearchResult?.query || searchInput || 'Locality'}
+                    {(activeSearchResult?.query || searchInput || 'Locality').split(',')[0].trim()} Properties
                   </h3>
-                  <p className="text-xs text-slate-400">Available residential apartments, villas, houses, and plots in this area</p>
+                  <p className="text-xs text-slate-400">
+                    Found <strong className="text-emerald-450">{localityProperties.length}</strong> properties in this locality • {
+                      (() => {
+                        const counts = {};
+                        localityProperties.forEach(p => {
+                          if (p.bhk) counts[`${p.bhk} BHK`] = (counts[`${p.bhk} BHK`] || 0) + 1;
+                        });
+                        return Object.entries(counts)
+                          .sort((a, b) => a[0].localeCompare(b[0]))
+                          .map(([bhkLabel, count]) => `${count} x ${bhkLabel}`)
+                          .join(", ") || "No distribution data";
+                      })()
+                    }
+                  </p>
                 </div>
                 <div className="flex items-center gap-3 self-start md:self-auto">
-                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-brand-500/10 text-brand-300 border border-brand-500/20">
-                    {localityProperties.length} Properties
-                  </span>
                   <button
                     onClick={() => {
                       setPostSuccess(false);
                       setPostError('');
                       setShowPostModal(true);
                     }}
-                    className="text-xs font-bold px-4 py-1.5 rounded-full bg-brand-600 hover:bg-brand-500 text-white transition-all shadow-md shadow-brand-500/10 flex items-center gap-1.5"
+                    className="text-xs font-bold px-4 py-2 rounded-full bg-brand-600 hover:bg-brand-500 text-white transition-all shadow-md shadow-brand-500/10 flex items-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Post Property
