@@ -4,6 +4,22 @@ Production-ready Real Estate Price Intelligence, Property Management, Computer V
 
 ![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20React%2019%20%7C%20XGBoost%20%7C%20OpenCV%20%7C%20PostgreSQL-0284c7)
 
+---
+
+## 🔗 Live Demo Links
+
+Click the links below to view the live project:
+
+| Service | Live Link | Status |
+| :--- | :--- | :--- |
+| **Frontend Web App** | [🔗 Visit Live Demo](https://joshitha2005-bit.github.io/cloud-based-real-estate) | [![Frontend](https://img.shields.io/badge/Frontend-Active-success?style=flat-square)](https://joshitha2005-bit.github.io/cloud-based-real-estate) |
+| **Backend API Gateway** | [🔗 View API Docs](https://cloud-based-real-estate-backend.onrender.com/docs) | [![Backend API](https://img.shields.io/badge/API-Active-success?style=flat-square)](https://cloud-based-real-estate-backend.onrender.com/docs) |
+
+> [!NOTE]
+> If your live links are different, simply update the URLs in this section of the [README.md](file:///c:/real%20estate/README.md) file.
+
+---
+
 ## 🚀 Key Features
 
 - **JWT Authentication & Security**: Complete registration, login, logout, password hashing with `passlib[bcrypt]`, and protected routes.
