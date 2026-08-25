@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: cloud-based-real-estate-backend
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PROJECT_NAME
+        value: "Real Estate Price Prediction & GIS Platform"
+      - key: API_V1_STR
+        value: "/api/v1"
+      - key: DATABASE_URL
+        value: "sqlite:///./real_estate.db"
+      - key: JWT_SECRET
+        value: "super-secret-key-real-estate-platform-2026-bangalore"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"
+      - key: GEOAPIFY_API_KEY
+        value: "7e57c95ce01147f38a78dab8029c635a"
+      - key: GOOGLE_MAPS_API_KEY
+        value: "AIzaSyDummyKeyForStreetViewIntegration2026"

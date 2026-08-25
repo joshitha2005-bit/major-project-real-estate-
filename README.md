@@ -15,8 +15,17 @@ Click the links below to view the live project:
 | **Frontend Web App** | [🔗 Visit Live Demo](https://joshitha2005-bit.github.io/cloud-based-real-estate) | [![Frontend](https://img.shields.io/badge/Frontend-Active-success?style=flat-square)](https://joshitha2005-bit.github.io/cloud-based-real-estate) |
 | **Backend API Gateway** | [🔗 View API Docs](https://cloud-based-real-estate-backend.onrender.com/docs) | [![Backend API](https://img.shields.io/badge/API-Active-success?style=flat-square)](https://cloud-based-real-estate-backend.onrender.com/docs) |
 
+### 🚀 Deploy Your Live Backend
+
+If your backend is not live yet, you can host it in the cloud for free with a single click:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/joshitha2005-bit/cloud-based-real-estate)
+
 > [!NOTE]
-> If your live links are different, simply update the URLs in this section of the [README.md](file:///c:/real%20estate/README.md) file.
+> Once your Render backend is deployed:
+> 1. Copy the URL that Render gives you (e.g. `https://your-app.onrender.com`).
+> 2. Replace the placeholder URL in this [README.md](file:///c:/real%20estate/README.md) table so your friends can click and see it live.
+> 3. Go to the file [`.github/workflows/deploy.yml`](file:///c:/real%20estate/.github/workflows/deploy.yml) and change the `VITE_API_URL` to point to your new Render backend URL!
 
 ---
 
