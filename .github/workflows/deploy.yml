@@ -1,0 +1,31 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    concurrency: ci-${{ github.ref }} # Prevent concurrent runs from overlapping
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+
+      - name: Install and Build 🔧
+        run: |
+          cd frontend
+          npm install
+          npm run build
+        env:
+          VITE_API_URL: https://cloud-based-real-estate-backend.onrender.com/api/v1
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: frontend/dist # The folder containing build files
+          branch: gh-pages # The branch to deploy to
