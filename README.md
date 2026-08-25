@@ -107,7 +107,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
-- Interactive API Docs: `http://localhost:8000/docs`
+- Interactive API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ### 2. Frontend Setup
 
@@ -116,7 +116,7 @@ cd frontend
 npm install
 npm run dev
 ```
-- App UI URL: `http://localhost:5173`
+- App UI URL: [http://localhost:5173](http://localhost:5173)
 
 ---
 
@@ -125,5 +125,5 @@ npm run dev
 ```bash
 docker-compose -f docker/docker-compose.yml up --build
 ```
-- App Access: `http://localhost`
-- API Access: `http://localhost:8000`
+- App Access: [http://localhost](http://localhost)
+- API Access: [http://localhost:8000](http://localhost:8000)
