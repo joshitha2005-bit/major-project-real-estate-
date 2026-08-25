@@ -136,6 +136,17 @@ npm run dev
 
 ---
 
+### 3. VS Code Shortcut (Easiest Way)
+
+If you are using **VS Code**, you don't need to run separate terminal commands manually:
+1. Open the project folder in VS Code.
+2. Go to the **Run and Debug** tab on the left sidebar (or press `Ctrl+Shift+D` / `Cmd+Shift+D`).
+3. Select **"Run Full App (Backend & Frontend)"** from the dropdown menu at the top.
+4. Press the green **Play button** (or press `F5`).
+5. VS Code will launch both servers automatically in your integrated terminal, enabling live reloading and interactive debugging for both the React app and the FastAPI backend.
+
+---
+
 ## 🐳 Docker Deployment
 
 ```bash

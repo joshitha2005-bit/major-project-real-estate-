@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: FastAPI",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "app.main:app",
+        "--reload",
+        "--port",
+        "8000"
+      ],
+      "cwd": "${workspaceFolder}/backend",
+      "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "jinja": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Frontend: Dev Server",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run Full App (Backend & Frontend)",
+      "configurations": [
+        "Backend: FastAPI",
+        "Frontend: Dev Server"
+      ],
+      "stopAll": true
+    }
+  ]
+}

@@ -16,7 +16,8 @@ frontend/.env
 *.db
 
 # VS Code
-.vscode/
+.vscode/*
+!.vscode/launch.json
 
 # Large Datasets
 *.zip
