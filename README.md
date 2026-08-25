@@ -20,6 +20,15 @@ Click the links below to view the live project:
 
 ---
 
+## 📁 Project Directory Structure
+
+You can explore the source code directories directly on GitHub:
+
+* [📁 Frontend (React App UI Structure)](./frontend) - Click to view React frontend source code, components, and configuration files.
+* [📁 Backend (FastAPI AI Engine Structure)](./backend) - Click to view FastAPI backend models, API routes, database schemas, and AI code.
+
+---
+
 ## 🚀 Key Features
 
 - **JWT Authentication & Security**: Complete registration, login, logout, password hashing with `passlib[bcrypt]`, and protected routes.
@@ -118,6 +127,13 @@ npm run dev
 ```
 - App UI URL: [http://localhost:5173](http://localhost:5173)
 
+> [!IMPORTANT]
+> **Why do localhost links show "refused to connect"?**
+> You must start the local development servers first!
+> 1. Start the backend by running the steps in **1. Backend Setup** below.
+> 2. Start the frontend by running the steps in **2. Frontend Setup** below.
+> Once the servers are running, clicking these links will load the working local app.
+
 ---
 
 ## 🐳 Docker Deployment
@@ -127,3 +143,7 @@ docker-compose -f docker/docker-compose.yml up --build
 ```
 - App Access: [http://localhost](http://localhost)
 - API Access: [http://localhost:8000](http://localhost:8000)
+
+> [!IMPORTANT]
+> **Note for Docker Deployment:**
+> You must run `docker-compose -f docker/docker-compose.yml up --build` first. Once the Docker containers are successfully built and running, clicking the links above will open the containerized app and API.
