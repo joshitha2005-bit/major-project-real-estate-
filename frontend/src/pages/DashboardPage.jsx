@@ -620,29 +620,7 @@ export const DashboardPage = () => {
                 </div>
               )}
 
-              {/* Owner Direct Listing Upload CTA */}
-              {user?.role === 'OWNER' && (
-                <div className="glass-card p-6 rounded-3xl border border-slate-800 space-y-4 flex flex-col justify-between">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <Plus className="w-4 h-4 text-brand-400" />
-                      <h4 className="text-xs uppercase font-extrabold tracking-wider text-white">Post Property Listings</h4>
-                    </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">Directly post your residential apartment, villa, or land plot. Listings undergo review prior to directory search listing.</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setPostSuccess(false);
-                      setPostError('');
-                      setShowPostModal(true);
-                    }}
-                    className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <span>List New Property</span>
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
+
 
               {/* Admin verifications CTA */}
               {user?.role === 'ADMIN' && (
@@ -1105,19 +1083,6 @@ export const DashboardPage = () => {
                       })()
                     }
                   </p>
-                </div>
-                <div className="flex items-center gap-3 self-start md:self-auto">
-                  <button
-                    onClick={() => {
-                      setPostSuccess(false);
-                      setPostError('');
-                      setShowPostModal(true);
-                    }}
-                    className="text-xs font-bold px-4 py-2 rounded-full bg-brand-600 hover:bg-brand-500 text-white transition-all shadow-md shadow-brand-500/10 flex items-center gap-1.5"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Post Property
-                  </button>
                 </div>
               </div>
 

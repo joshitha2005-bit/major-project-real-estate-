@@ -264,6 +264,39 @@ export const PropertyDetailsPage = () => {
   const isHistorical = property && (property.source_type === 'historical_dataset' || property.source === 'Bengaluru_House_Data.csv');
   const hasMultipleImages = !isHistorical && property.images && property.images.length > 1;
   const hasImages = !isHistorical && property.images && property.images.length > 0;
+  const rawPhone = property && (property.phone || property.owner_phone);
+  const detailsPhone = (property && rawPhone && rawPhone !== 'Contact information unavailable' && rawPhone.trim() !== '')
+    ? rawPhone
+    : "+91 98860 12345";
+
+  const getRealisticName = (prop) => {
+    if (!prop) return "";
+    if (prop.society && prop.society.trim() !== '' && prop.society.toLowerCase() !== 'none') {
+      return prop.society;
+    }
+    if (prop.title && !prop.title.includes("BHK in") && !prop.title.includes("BHK —") && !prop.title.includes("BHK Property") && prop.title.split(' ').length > 2) {
+      return prop.title;
+    }
+
+    const builders = [
+      "Prestige", "Sobha", "Brigade", "Puravankara", "Shriram", 
+      "Salarpuria Sattva", "Godrej", "L&T Rejuve", "Assetz", "Valmark",
+      "Adarsh", "Casagrand", "Rohan", "Mahaveer", "Trendsquare"
+    ];
+    const suffixes = [
+      "Lakeside", "Elanza", "Signature", "Gateway", "Woodland",
+      "Park", "Meadows", "Ferns", "Ascent", "Green Meadows",
+      "Serenity", "Boulevard", "Vista", "County", "Palms",
+      "Splendour", "Lake Ridge", "Heights", "Terraces", "Orchid"
+    ];
+    
+    const id = prop.id || 0;
+    const builder = builders[id % builders.length];
+    const suffix = suffixes[(id * 7) % suffixes.length];
+    return `${builder} ${suffix}`;
+  };
+
+  const displayName = getRealisticName(property);
 
   return (
     <div className="min-h-screen flex flex-col bg-dark-950 text-slate-100">
@@ -341,7 +374,7 @@ export const PropertyDetailsPage = () => {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold font-outfit text-white leading-tight">
-              {property.title}
+              {displayName}
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 flex items-center gap-1.5 font-medium">
               <MapPin className="w-4 h-4 text-brand-400 flex-shrink-0" />
@@ -366,7 +399,7 @@ export const PropertyDetailsPage = () => {
                 <img
                   src={property.images[activeImageIndex]}
                   onError={(e) => { e.target.src = localFallbackImage; }}
-                  alt={`${property.title} - View ${activeImageIndex + 1}`}
+                  alt={`${displayName} - View ${activeImageIndex + 1}`}
                   className="w-full h-full object-cover select-none"
                 />
                 
@@ -1058,8 +1091,8 @@ export const PropertyDetailsPage = () => {
                   </div>
                 )
               ) : (
-                <a href={`tel:${property.phone || property.owner_phone}`} className="text-sm font-bold text-brand-400 hover:underline block font-mono">
-                  {property.phone || property.owner_phone || "+91 98860 12345"}
+                <a href={`tel:${detailsPhone}`} className="text-sm font-bold text-brand-400 hover:underline block font-mono">
+                  {detailsPhone}
                 </a>
               )}
             </div>
@@ -1085,7 +1118,7 @@ export const PropertyDetailsPage = () => {
 
             <div className="space-y-1">
               <h4 className="text-lg font-bold text-white font-outfit">Contact Seller</h4>
-              <p className="text-xs text-slate-400">Directly inquiry for: <strong className="text-slate-200">{property.title}</strong></p>
+              <p className="text-xs text-slate-400">Directly inquiry for: <strong className="text-slate-200">{displayName}</strong></p>
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 space-y-1 text-xs">
@@ -1110,7 +1143,7 @@ export const PropertyDetailsPage = () => {
                     )
                   )
                 ) : (
-                  <span className="text-emerald-400 font-mono font-bold">{property.phone || property.owner_phone || "+91 98860 12345"}</span>
+                  <span className="text-emerald-400 font-mono font-bold">{detailsPhone}</span>
                 )}
               </div>
               <p className="text-slate-400">Location: {property.address}</p>
