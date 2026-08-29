@@ -5,7 +5,46 @@ import {
   Eye, Compass, CheckCircle2, User, MessageSquare, X 
 } from 'lucide-react';
 
-const localFallbackImage = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'><rect width='800' height='600' fill='%230f172a'/><g transform='translate(400, 300)'><path d='M-60,40 L-60,-20 L0,-70 L60,-20 L60,40 Z' fill='none' stroke='%23475569' stroke-width='6' stroke-linejoin='round'/><path d='M-20,40 L-20,0 L20,0 L20,40' fill='none' stroke='%23475569' stroke-width='6' stroke-linejoin='round'/></g><text x='400' y='420' fill='%2364748b' font-family='sans-serif' font-size='16' font-weight='bold' text-anchor='middle'>Property Photo Unavailable</text></svg>";
+const getCleanFallbackImage = (id, ptype = "") => {
+  const ptype_lower = (ptype || "").toLowerCase();
+  let cat = "apartments";
+  let count = 20;
+  if (ptype_lower.includes("villa")) {
+    cat = "villas";
+    count = 15;
+  } else if (ptype_lower.includes("house") || ptype_lower.includes("independent")) {
+    cat = "houses";
+    count = 15;
+  } else if (ptype_lower.includes("penthouse")) {
+    cat = "penthouses";
+    count = 10;
+  } else if (ptype_lower.includes("plot") || ptype_lower.includes("land")) {
+    cat = "plots";
+    count = 9;
+  }
+  const idx = String(((id || 0) % count) + 1).padStart(2, '0');
+  return `/static/property-images/${cat}/${cat}_${idx}.jpg`;
+};
+
+// Module-level tracking for displayed images in the current render pass.
+// Resets automatically after the batch rendering completes.
+let displayedImageUrls = new Set();
+let resetTimeout = null;
+
+const checkDuplicate = (url) => {
+  if (!url) return false;
+  if (displayedImageUrls.has(url)) {
+    return true; // Duplicate detected!
+  }
+  displayedImageUrls.add(url);
+  
+  if (resetTimeout) clearTimeout(resetTimeout);
+  resetTimeout = setTimeout(() => {
+    displayedImageUrls.clear();
+  }, 150);
+  
+  return false;
+};
 
 export const PropertyCard = ({ property, onSelectOnMap }) => {
   const [showContactModal, setShowContactModal] = useState(false);
@@ -13,10 +52,18 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
 
   const isHistorical = property.source_type === 'historical_dataset' || property.source === 'Bengaluru_House_Data.csv';
   
-  // Historical dataset records do not contain legitimate property image URLs. Show unavailable placeholder.
-  const mainImage = (isHistorical || !property.images || property.images.length === 0) 
-    ? localFallbackImage 
-    : property.images[0];
+  // Look for the first image in the array that is not a duplicate
+  let chosenImage = null;
+  if (property.images && property.images.length > 0) {
+    for (const img of property.images) {
+      if (img && !checkDuplicate(img)) {
+        chosenImage = img;
+        break;
+      }
+    }
+  }
+  
+  const mainImage = chosenImage || getCleanFallbackImage(property.id || 0, property.property_type);
 
   const displayPhone = (property.owner_phone && property.owner_phone !== 'Contact information unavailable' && property.owner_phone.trim() !== '')
     ? property.owner_phone
@@ -60,7 +107,7 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
           <div className="relative aspect-[16/10] overflow-hidden bg-slate-900">
             <img 
               src={mainImage} 
-              onError={(e) => { e.target.src = localFallbackImage; }}
+              onError={(e) => { e.target.src = getCleanFallbackImage(property.id || 0, property.property_type); }}
               alt={displayName} 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
             />

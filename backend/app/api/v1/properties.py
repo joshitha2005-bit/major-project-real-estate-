@@ -165,9 +165,23 @@ def enrich_property_out(p: Property) -> PropertyOut:
         society_val = None
         property_type_val = p.property_type
 
-    # Filter out synthetic seed images (only genuine uploaded or dataset images allowed)
+    # Use genuine property images from local database dataset or local category fallback
     raw_images = [img.image_path for img in p.property_images] if p.property_images else (p.images or [])
-    filtered_images = [img for img in raw_images if isinstance(img, str) and "unsplash.com" not in img and img.strip()]
+    filtered_images = [img for img in raw_images if isinstance(img, str) and img.strip()]
+    if not filtered_images:
+        ptype_lower = (p.property_type or "").lower()
+        title_lower = (p.title or "").lower()
+        cat = "apartments"
+        if "villa" in ptype_lower or "villa" in title_lower:
+            cat = "villas"
+        elif "house" in ptype_lower or "independent" in ptype_lower:
+            cat = "houses"
+        elif "penthouse" in ptype_lower or "penthouse" in title_lower:
+            cat = "penthouses"
+        elif "plot" in ptype_lower or "land" in ptype_lower:
+            cat = "plots"
+        idx = (p.id % 10) + 1
+        filtered_images = [f"/static/property-images/{cat}/{cat}_{idx:02d}.jpg"]
 
     # Phone contact privacy and fallback
     SEED_PHONES = {"+91 98860 12345", "+91 98450 67890", "+91 99001 88345", "+91 98110 99887", "+91 98801 33456", "+91 97400 22341", "+91 98440 66789", "+91 98866 55432", "+91 98451 77654", "+91 98800 33210"}
@@ -257,7 +271,15 @@ def auto_generate_locality_sample_properties(
 
     for i, spec in enumerate(specs):
         builder = BUILDERS[i % len(BUILDERS)]
-        images = []
+        ptype_lower = spec["ptype"].lower()
+        if ptype_lower == "apartment":
+            images = [f"/static/images/apartment_{(i % 15) + 1}.jpg"]
+        elif ptype_lower == "villa":
+            images = [f"/static/images/villa_{(i % 15) + 1}.jpg"]
+        elif ptype_lower == "independent house":
+            images = [f"/static/images/house_{(i % 15) + 1}.jpg"]
+        else:
+            images = [f"/static/images/apartment_{(i % 15) + 1}.jpg"]
         
         area = spec["area"]
         price = round(base_price_sqft * area * (1 + (i * 0.1)), -4)
@@ -555,7 +577,7 @@ async def get_property_by_id(
             prop.nearby_places = places
             db.commit()
             db.refresh(prop)
-            
+
     return enrich_property_out(prop)
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)

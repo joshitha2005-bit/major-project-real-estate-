@@ -26,8 +26,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Koramangala built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_5.jpg"
         ]
     },
     {
@@ -51,8 +50,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime Koramangala built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -76,7 +74,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Villa in prime Koramangala built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_10.jpg"
         ]
     },
     {
@@ -100,8 +98,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Independent House in prime Koramangala built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_14.jpg"
         ]
     },
     {
@@ -125,7 +122,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime Electronic City built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -149,8 +146,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Electronic City built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_4.jpg"
         ]
     },
     {
@@ -174,8 +170,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Villa in prime Electronic City built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_5.jpg"
         ]
     },
     {
@@ -199,7 +194,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Independent House in prime Electronic City built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_7.jpg"
         ]
     },
     {
@@ -223,8 +218,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Whitefield built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_12.jpg"
         ]
     },
     {
@@ -248,7 +242,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Whitefield built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_3.jpg"
         ]
     },
     {
@@ -272,8 +266,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Villa in prime Whitefield built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_15.jpg"
         ]
     },
     {
@@ -297,8 +290,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Independent House in prime Whitefield built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_5.jpg"
         ]
     },
     {
@@ -322,8 +314,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime HSR Layout built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -347,8 +338,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime HSR Layout built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -372,7 +362,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Villa in prime HSR Layout built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_7.jpg"
         ]
     },
     {
@@ -396,8 +386,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Independent House in prime HSR Layout built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_1.jpg"
         ]
     },
     {
@@ -421,7 +410,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Indiranagar built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_9.jpg"
         ]
     },
     {
@@ -445,8 +434,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Indiranagar built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -470,8 +458,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Villa in prime Indiranagar built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_8.jpg"
         ]
     },
     {
@@ -495,7 +482,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Independent House in prime Indiranagar built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_8.jpg"
         ]
     },
     {
@@ -519,8 +506,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Marathahalli built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_3.jpg"
         ]
     },
     {
@@ -544,7 +530,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime Marathahalli built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_15.jpg"
         ]
     },
     {
@@ -568,8 +554,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Villa in prime Marathahalli built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_8.jpg"
         ]
     },
     {
@@ -593,8 +578,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Independent House in prime Marathahalli built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_10.jpg"
         ]
     },
     {
@@ -618,8 +602,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime Bellandur built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_5.jpg"
         ]
     },
     {
@@ -643,8 +626,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Bellandur built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_14.jpg"
         ]
     },
     {
@@ -668,7 +650,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Villa in prime Bellandur built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_14.jpg"
         ]
     },
     {
@@ -692,8 +674,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Independent House in prime Bellandur built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_5.jpg"
         ]
     },
     {
@@ -717,7 +698,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Sarjapur Road built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_5.jpg"
         ]
     },
     {
@@ -741,8 +722,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Sarjapur Road built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -766,8 +746,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Villa in prime Sarjapur Road built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_15.jpg"
         ]
     },
     {
@@ -791,7 +770,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Independent House in prime Sarjapur Road built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_10.jpg"
         ]
     },
     {
@@ -815,8 +794,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime JP Nagar built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_11.jpg"
         ]
     },
     {
@@ -840,7 +818,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime JP Nagar built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -864,8 +842,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Villa in prime JP Nagar built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_13.jpg"
         ]
     },
     {
@@ -889,8 +866,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Independent House in prime JP Nagar built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_4.jpg"
         ]
     },
     {
@@ -914,8 +890,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Jayanagar built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_9.jpg"
         ]
     },
     {
@@ -939,8 +914,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Jayanagar built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -964,7 +938,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Villa in prime Jayanagar built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_8.jpg"
         ]
     },
     {
@@ -988,8 +962,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Independent House in prime Jayanagar built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_2.jpg"
         ]
     },
     {
@@ -1013,7 +986,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Banashankari built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_12.jpg"
         ]
     },
     {
@@ -1037,8 +1010,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime Banashankari built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_5.jpg"
         ]
     },
     {
@@ -1062,8 +1034,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Villa in prime Banashankari built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_11.jpg"
         ]
     },
     {
@@ -1087,7 +1058,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Independent House in prime Banashankari built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_12.jpg"
         ]
     },
     {
@@ -1111,8 +1082,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime Hebbal built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_5.jpg"
         ]
     },
     {
@@ -1136,7 +1106,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Hebbal built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_15.jpg"
         ]
     },
     {
@@ -1160,8 +1130,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Villa in prime Hebbal built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_12.jpg"
         ]
     },
     {
@@ -1185,8 +1154,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Independent House in prime Hebbal built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_13.jpg"
         ]
     },
     {
@@ -1210,8 +1178,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Yelahanka built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_6.jpg"
         ]
     },
     {
@@ -1235,8 +1202,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Yelahanka built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_3.jpg"
         ]
     },
     {
@@ -1260,7 +1226,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Villa in prime Yelahanka built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_1.jpg"
         ]
     },
     {
@@ -1284,8 +1250,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Independent House in prime Yelahanka built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_6.jpg"
         ]
     },
     {
@@ -1309,7 +1274,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime KR Puram built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_14.jpg"
         ]
     },
     {
@@ -1333,8 +1298,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime KR Puram built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_14.jpg"
         ]
     },
     {
@@ -1358,8 +1322,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Villa in prime KR Puram built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_14.jpg"
         ]
     },
     {
@@ -1383,7 +1346,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Independent House in prime KR Puram built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_6.jpg"
         ]
     },
     {
@@ -1407,8 +1370,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Mahadevapura built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_13.jpg"
         ]
     },
     {
@@ -1432,7 +1394,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Mahadevapura built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -1456,8 +1418,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Villa in prime Mahadevapura built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_11.jpg"
         ]
     },
     {
@@ -1481,8 +1442,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Independent House in prime Mahadevapura built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_6.jpg"
         ]
     },
     {
@@ -1506,8 +1466,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime BTM Layout built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_15.jpg"
         ]
     },
     {
@@ -1531,8 +1490,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime BTM Layout built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -1556,7 +1514,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Villa in prime BTM Layout built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_9.jpg"
         ]
     },
     {
@@ -1580,8 +1538,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Independent House in prime BTM Layout built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_9.jpg"
         ]
     },
     {
@@ -1605,7 +1562,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime Bannerghatta Road built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_10.jpg"
         ]
     },
     {
@@ -1629,8 +1586,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Bannerghatta Road built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_11.jpg"
         ]
     },
     {
@@ -1654,8 +1610,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Villa in prime Bannerghatta Road built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_12.jpg"
         ]
     },
     {
@@ -1679,7 +1634,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Independent House in prime Bannerghatta Road built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_1.jpg"
         ]
     },
     {
@@ -1703,8 +1658,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Thanisandra built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_11.jpg"
         ]
     },
     {
@@ -1728,7 +1682,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Thanisandra built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_1.jpg"
         ]
     },
     {
@@ -1752,8 +1706,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Villa in prime Thanisandra built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_5.jpg"
         ]
     },
     {
@@ -1777,8 +1730,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Independent House in prime Thanisandra built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_12.jpg"
         ]
     },
     {
@@ -1802,8 +1754,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime Hennur built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_6.jpg"
         ]
     },
     {
@@ -1827,8 +1778,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime Hennur built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -1852,7 +1802,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Villa in prime Hennur built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_11.jpg"
         ]
     },
     {
@@ -1876,8 +1826,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Independent House in prime Hennur built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_7.jpg"
         ]
     },
     {
@@ -1901,7 +1850,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Vijayanagar built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_15.jpg"
         ]
     },
     {
@@ -1925,8 +1874,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Vijayanagar built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_9.jpg"
         ]
     },
     {
@@ -1950,8 +1898,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Villa in prime Vijayanagar built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_14.jpg"
         ]
     },
     {
@@ -1975,7 +1922,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Independent House in prime Vijayanagar built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_4.jpg"
         ]
     },
     {
@@ -1999,8 +1946,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Rajajinagar built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_5.jpg"
         ]
     },
     {
@@ -2024,7 +1970,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime Rajajinagar built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_6.jpg"
         ]
     },
     {
@@ -2048,8 +1994,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Villa in prime Rajajinagar built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_6.jpg"
         ]
     },
     {
@@ -2073,8 +2018,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Independent House in prime Rajajinagar built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_14.jpg"
         ]
     },
     {
@@ -2098,8 +2042,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime Malleshwaram built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_2.jpg"
         ]
     },
     {
@@ -2123,8 +2066,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Malleshwaram built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_3.jpg"
         ]
     },
     {
@@ -2148,7 +2090,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Villa in prime Malleshwaram built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_11.jpg"
         ]
     },
     {
@@ -2172,8 +2114,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Independent House in prime Malleshwaram built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_5.jpg"
         ]
     },
     {
@@ -2197,7 +2138,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Basavanagudi built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_8.jpg"
         ]
     },
     {
@@ -2221,8 +2162,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Apartment in prime Basavanagudi built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_8.jpg"
         ]
     },
     {
@@ -2246,8 +2186,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Villa in prime Basavanagudi built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_6.jpg"
         ]
     },
     {
@@ -2271,7 +2210,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Independent House in prime Basavanagudi built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_3.jpg"
         ]
     },
     {
@@ -2295,8 +2234,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Apartment in prime Brookefield built by Salarpuria Sattva. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_5.jpg"
         ]
     },
     {
@@ -2320,7 +2258,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 97400 22341",
         "description": "Premium Apartment in prime Brookefield built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_14.jpg"
         ]
     },
     {
@@ -2344,8 +2282,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Villa in prime Brookefield built by Sobha. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_13.jpg"
         ]
     },
     {
@@ -2369,8 +2306,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Independent House in prime Brookefield built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_9.jpg"
         ]
     },
     {
@@ -2394,8 +2330,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98866 55432",
         "description": "Premium Apartment in prime Chandapura built by Sobha. Features 2 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_5.jpg"
         ]
     },
     {
@@ -2419,8 +2354,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98800 33210",
         "description": "Premium Apartment in prime Chandapura built by Godrej. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80"
+            "/static/images/apartment_12.jpg"
         ]
     },
     {
@@ -2444,7 +2378,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98450 67890",
         "description": "Premium Villa in prime Chandapura built by Salarpuria Sattva. Features 4 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80"
+            "/static/images/villa_5.jpg"
         ]
     },
     {
@@ -2468,8 +2402,7 @@ SEEDED_PROPERTIES = [
         "owner_phone": "+91 98110 99887",
         "description": "Premium Independent House in prime Chandapura built by Assetz. Features 3 BHK spacious layout, modern interior woodwork, 24/7 security, power backup, covered parking, and close access to schools, hospitals, and Metro connectivity.",
         "images": [
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80"
+            "/static/images/house_11.jpg"
         ]
     }
 ]

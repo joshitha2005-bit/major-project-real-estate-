@@ -9,8 +9,6 @@ import {
   ArrowRight, Loader2, IndianRupee, Layers 
 } from 'lucide-react';
 
-const localFallbackImage = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'><rect width='800' height='600' fill='%230f172a'/><g transform='translate(400, 300)'><path d='M-60,40 L-60,-20 L0,-70 L60,-20 L60,40 Z' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linejoin='round'/><path d='M-20,40 L-20,0 L20,0 L20,40' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linejoin='round'/></g><text x='400' y='420' fill='%2364748b' font-family='sans-serif' font-size='20' font-weight='bold' text-anchor='middle'>Property Photo Unavailable</text></svg>";
-
 const PROPERTY_TYPES = ["All", "Apartment", "Villa", "Independent House", "Penthouse", "Plot"];
 
 export const PropertyListingsPage = () => {

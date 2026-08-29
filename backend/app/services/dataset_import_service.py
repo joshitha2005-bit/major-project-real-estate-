@@ -1,5 +1,6 @@
 import os
 import glob
+import hashlib
 import pandas as pd
 import math
 from typing import Dict, Any, List
@@ -149,7 +150,22 @@ class DatasetImportService:
 
                     builder = BUILDERS[idx % len(BUILDERS)]
                     owner = OWNERS[idx % len(OWNERS)]
-                    images = IMAGES_POOL[idx % len(IMAGES_POOL)]
+                    ptype_lower = ptype.lower()
+                    h_str = f"{title}_{idx}"
+                    h = hashlib.md5(h_str.encode('utf-8')).hexdigest()
+                    h_val = int(h, 16)
+                    if ptype_lower == "apartment":
+                        images = [f"/static/property-images/apartments/apartments_{(h_val % 20) + 1:02d}.jpg"]
+                    elif ptype_lower == "villa":
+                        images = [f"/static/property-images/villas/villas_{(h_val % 15) + 1:02d}.jpg"]
+                    elif ptype_lower == "independent house" or "house" in ptype_lower:
+                        images = [f"/static/property-images/houses/houses_{(h_val % 15) + 1:02d}.jpg"]
+                    elif "penthouse" in ptype_lower:
+                        images = [f"/static/property-images/penthouses/penthouses_{(h_val % 10) + 1:02d}.jpg"]
+                    elif "plot" in ptype_lower or "land" in ptype_lower:
+                        images = [f"/static/property-images/plots/plots_{(h_val % 9) + 1:02d}.jpg"]
+                    else:
+                        images = [f"/static/property-images/apartments/apartments_{(h_val % 20) + 1:02d}.jpg"]
 
                     title = f"{builder} {locality_name} {bhk}BHK {ptype}" if bhk > 0 else f"{builder} {locality_name} Premium {ptype}"
                     address = f"Phase {(idx%3)+1}, Main Road, {locality_name}, Bengaluru - {loc_info['pin']}"

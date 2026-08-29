@@ -15,7 +15,26 @@ import {
   Flame, Activity, FileText, ChevronLeft, ChevronRight, Compass, Lock
 } from 'lucide-react';
 
-const localFallbackImage = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600' viewBox='0 0 800 600'><rect width='800' height='600' fill='%230f172a'/><g transform='translate(400, 300)'><path d='M-60,40 L-60,-20 L0,-70 L60,-20 L60,40 Z' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linejoin='round'/><path d='M-20,40 L-20,0 L20,0 L20,40' fill='none' stroke='%2338bdf8' stroke-width='6' stroke-linejoin='round'/></g><text x='400' y='420' fill='%2364748b' font-family='sans-serif' font-size='20' font-weight='bold' text-anchor='middle'>Property Photo Unavailable</text></svg>";
+const getDetailsFallbackImage = (id, ptype = "") => {
+  const ptype_lower = (ptype || "").toLowerCase();
+  let cat = "apartments";
+  let count = 20;
+  if (ptype_lower.includes("villa")) {
+    cat = "villas";
+    count = 15;
+  } else if (ptype_lower.includes("house") || ptype_lower.includes("independent")) {
+    cat = "houses";
+    count = 15;
+  } else if (ptype_lower.includes("penthouse")) {
+    cat = "penthouses";
+    count = 10;
+  } else if (ptype_lower.includes("plot") || ptype_lower.includes("land")) {
+    cat = "plots";
+    count = 9;
+  }
+  const idx = String(((id || 0) % count) + 1).padStart(2, '0');
+  return `/static/property-images/${cat}/${cat}_${idx}.jpg`;
+};
 
 export const PropertyDetailsPage = () => {
   const { id } = useParams();
@@ -177,14 +196,14 @@ export const PropertyDetailsPage = () => {
   };
 
   const handlePrevImage = () => {
-    if (property?.images && property.images.length > 0) {
-      setActiveImageIndex((prev) => (prev === 0 ? property.images.length - 1 : prev - 1));
+    if (uniqueImages.length > 0) {
+      setActiveImageIndex((prev) => (prev === 0 ? uniqueImages.length - 1 : prev - 1));
     }
   };
 
   const handleNextImage = () => {
-    if (property?.images && property.images.length > 0) {
-      setActiveImageIndex((prev) => (prev === property.images.length - 1 ? 0 : prev + 1));
+    if (uniqueImages.length > 0) {
+      setActiveImageIndex((prev) => (prev === uniqueImages.length - 1 ? 0 : prev + 1));
     }
   };
 
@@ -262,8 +281,11 @@ export const PropertyDetailsPage = () => {
   };
 
   const isHistorical = property && (property.source_type === 'historical_dataset' || property.source === 'Bengaluru_House_Data.csv');
-  const hasMultipleImages = !isHistorical && property.images && property.images.length > 1;
-  const hasImages = !isHistorical && property.images && property.images.length > 0;
+  const uniqueImages = property && property.images
+    ? Array.from(new Set(property.images))
+    : [];
+  const hasMultipleImages = uniqueImages.length > 1;
+  const hasImages = uniqueImages.length > 0;
   const rawPhone = property && (property.phone || property.owner_phone);
   const detailsPhone = (property && rawPhone && rawPhone !== 'Contact information unavailable' && rawPhone.trim() !== '')
     ? rawPhone
@@ -397,8 +419,8 @@ export const PropertyDetailsPage = () => {
             {hasImages ? (
               <>
                 <img
-                  src={property.images[activeImageIndex]}
-                  onError={(e) => { e.target.src = localFallbackImage; }}
+                  src={uniqueImages[activeImageIndex]}
+                  onError={(e) => { e.target.src = getDetailsFallbackImage(id, property?.property_type); }}
                   alt={`${displayName} - View ${activeImageIndex + 1}`}
                   className="w-full h-full object-cover select-none"
                 />
@@ -425,7 +447,7 @@ export const PropertyDetailsPage = () => {
 
                 {/* Image Counter Indicator Badge */}
                 <div className="absolute bottom-4 right-4 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-800 text-[10px] font-mono font-bold text-slate-300">
-                  {activeImageIndex + 1} of {property.images.length}
+                  {activeImageIndex + 1} of {uniqueImages.length}
                 </div>
               </>
             ) : (
@@ -439,7 +461,7 @@ export const PropertyDetailsPage = () => {
           {/* Thumbnails row */}
           {hasMultipleImages && (
             <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
-              {property.images.map((img, idx) => (
+              {uniqueImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
@@ -449,7 +471,7 @@ export const PropertyDetailsPage = () => {
                       : 'border-slate-800 opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} onError={(e) => { e.target.src = localFallbackImage; }} alt={`Thumbnail view ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={img} onError={(e) => { e.target.src = getDetailsFallbackImage(id, property?.property_type); }} alt={`Thumbnail view ${idx + 1}`} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

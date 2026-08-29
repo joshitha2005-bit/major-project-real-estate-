@@ -1,4 +1,5 @@
 import json
+import hashlib
 
 LOCALITIES = [
     {"name": "Koramangala", "lat": 12.9357, "lon": 77.6240, "base_price": 12500, "pin": "560034"},
@@ -83,7 +84,20 @@ for loc in LOCALITIES:
         ptype_info = PROPERTY_TYPES[i % len(PROPERTY_TYPES)]
         builder = BUILDERS[(count + i) % len(BUILDERS)]
         owner = OWNERS[(count + i) % len(OWNERS)]
-        images = IMAGES_POOL[(count + i) % len(IMAGES_POOL)]
+        ptype_lower = ptype_info["type"].lower()
+        title = f"{builder} {loc['name']} {ptype_info['bhk']}BHK {ptype_info['type']}" if ptype_info['bhk'] > 0 else f"{builder} {loc['name']} Premium {ptype_info['type']}"
+        h_str = f"{title}_{count}"
+        h = hashlib.md5(h_str.encode('utf-8')).hexdigest()
+        h_val = int(h, 16)
+        
+        if ptype_lower == "apartment":
+            images = [f"/static/images/apartment_{(h_val % 15) + 1}.jpg"]
+        elif ptype_lower == "villa":
+            images = [f"/static/images/villa_{(h_val % 15) + 1}.jpg"]
+        elif ptype_lower == "independent house":
+            images = [f"/static/images/house_{(h_val % 15) + 1}.jpg"]
+        else:
+            images = [f"/static/images/apartment_{(h_val % 15) + 1}.jpg"]
         
         # Vary area slightly
         area = ptype_info["area"] + ((i * 120) % 350)
@@ -95,7 +109,6 @@ for loc in LOCALITIES:
         lat_offset = (i * 0.003) - 0.0045
         lon_offset = (i * 0.0025) - 0.003
         
-        title = f"{builder} {loc['name']} {ptype_info['bhk']}BHK {ptype_info['type']}" if ptype_info['bhk'] > 0 else f"{builder} {loc['name']} Premium {ptype_info['type']}"
         address = f"Block {i+1}, Main Road, {loc['name']}, Bengaluru - {loc['pin']}"
         
         desc = (

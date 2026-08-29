@@ -29,7 +29,13 @@ const GENERIC_NAMES = new Set([
 function isGenericName(name) {
   const lower = (name || '').toLowerCase().trim();
   if (lower.length < 3) return true;
-  if (GENERIC_NAMES.has(lower)) return true;
+  
+  const genericTerms = [
+    'point of interest', 'unnamed', 'unknown', 'building', 'structure', 
+    'place', 'area', 'zone', 'road'
+  ];
+  if (genericTerms.some(term => lower.includes(term))) return true;
+  
   if (/^[0-9]+$/.test(lower)) return true;
   return false;
 }
@@ -199,7 +205,7 @@ export const NearbyPlacesList = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[520px] overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 max-h-[520px] overflow-y-auto pr-1">
           {sortedPlaces.map((place, idx) => {
             const catInfo = CATEGORY_MAP[place.category] || CATEGORY_MAP["All"];
             const Icon = catInfo.icon;
