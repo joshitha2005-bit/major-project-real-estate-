@@ -1,3 +1,4 @@
+from sqlalchemy import or_
 import os
 import uuid
 import random
@@ -9,7 +10,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
 from app.models.property import Property, PropertyImage
-from app.schemas.property import PropertyOut, PropertyListOut, PropertyCreate
+from app.schemas.property import PropertyOut, PropertyListOut, PropertyCreate, CanonicalLocation
 from app.services.geoapify_service import GeoapifyService
 from app.services.storage_service import StorageService
 from app.api.deps import get_current_user, get_current_user_with_role
@@ -122,84 +123,189 @@ def enrich_property_out(p: Property) -> PropertyOut:
     price_formatted = format_indian_currency(p.price)
     
     # Determine coordinate status
-    if p.source_type == "historical_dataset" or p.source == "Bengaluru_House_Data.csv":
-        coord_status = "LOCALITY_APPROXIMATE"
-    elif p.latitude == 0 and p.longitude == 0:
-        coord_status = "UNAVAILABLE"
-    else:
-        coord_status = "EXACT"
-        
+    coord_quality = getattr(p, "coordinate_quality", None)
+    if not coord_quality:
+        if p.source_type == "historical_dataset" or p.source == "Bengaluru_House_Data.csv":
+            coord_quality = "LOCALITY_APPROXIMATE"
+        elif p.latitude == 0 and p.longitude == 0:
+            coord_quality = "MISSING"
+        else:
+            coord_quality = "EXACT"
+    coord_status = coord_quality
+
     # Determine property type source
     is_historical = (p.source_type == "historical_dataset" or p.source == "Bengaluru_House_Data.csv")
     ptype_src = "inferred" if is_historical else "user_provided"
     
-    # Determine title & society normalization
+    # Determine title, building & society normalization according to real-world priority rules
     raw_title = (p.title or "").strip()
+    raw_society = (getattr(p, "society", None) or "").strip()
     loc_str = extract_location(p)
     
-    REAL_BUILDERS = ["prestige", "sobha", "salarpuria", "brigade", "godrej", "assetz", "puravankara", "l&t", "embassy", "shriram", "mantri", "dharani", "signature", "century", "provident"]
-    is_real_builder = any(b in raw_title.lower() for b in REAL_BUILDERS)
+    building_name = None
+    project_name = None
+    society_name = None
     
-    if is_real_builder:
-        final_title = raw_title
-        society_val = raw_title
-        property_type_val = p.property_type
-    elif not is_historical and not is_anonymized_code(raw_title):
-        final_title = raw_title
-        society_val = raw_title
-        property_type_val = p.property_type
-    else:
-        # Rule B & C: Transparent fallback using actual dataset fields (size + location)
-        if "bedroom" in raw_title.lower() or (p.bhk and p.bhk > 4):
-            size_str = f"{p.bhk} Bedroom"
-        elif p.bhk and p.bhk > 0:
-            size_str = f"{p.bhk} BHK"
-        else:
-            size_str = ""
-            
-        if size_str:
-            final_title = f"{size_str} in {loc_str}"
-        else:
-            final_title = f"Property in {loc_str}"
-            
-        society_val = None
-        property_type_val = p.property_type
+    # Priority 1: Check genuine society name (must not be an anonymized Kaggle hash code)
+    if raw_society and raw_society.lower() not in ["none", "null", "nan", ""]:
+        if not is_anonymized_code(raw_society):
+            society_name = raw_society
+            building_name = raw_society
+            project_name = raw_society
+    
+    KNOWN_BUILDERS = [
+        "prestige", "sobha", "salarpuria", "brigade", "godrej", "assetz", 
+        "puravankara", "l&t", "embassy", "shriram", "mantri", "dharani", 
+        "signature", "century", "provident", "casagrand", "sukhi", "elgin", 
+        "scion", "dra", "mahindra", "vgn", "kg"
+    ]
+    title_has_builder = any(b in raw_title.lower() for b in KNOWN_BUILDERS)
+    
+    if not building_name:
+        if title_has_builder or (not is_historical and not is_anonymized_code(raw_title) and not raw_title.lower().startswith("property in")):
+            building_name = raw_title
+            if not project_name:
+                project_name = raw_title
 
-    # Use genuine property images from local database dataset or local category fallback
-    raw_images = [img.image_path for img in p.property_images] if p.property_images else (p.images or [])
-    filtered_images = [img for img in raw_images if isinstance(img, str) and img.strip()]
-    if not filtered_images:
-        ptype_lower = (p.property_type or "").lower()
-        title_lower = (p.title or "").lower()
-        cat = "apartments"
-        if "villa" in ptype_lower or "villa" in title_lower:
-            cat = "villas"
-        elif "house" in ptype_lower or "independent" in ptype_lower:
-            cat = "houses"
-        elif "penthouse" in ptype_lower or "penthouse" in title_lower:
-            cat = "penthouses"
-        elif "plot" in ptype_lower or "land" in ptype_lower:
-            cat = "plots"
-        idx = (p.id % 10) + 1
-        filtered_images = [f"/static/property-images/{cat}/{cat}_{idx:02d}.jpg"]
+    # Honest property type fallback (preserves Bedroom for 5+ BHK as tested in test suite)
+    if "bedroom" in raw_title.lower() or (p.bhk and p.bhk > 4):
+        size_str = f"{p.bhk} Bedroom"
+    elif p.bhk and p.bhk > 0:
+        size_str = f"{p.bhk} BHK"
+    else:
+        size_str = "Property"
+        
+    fallback_title = f"{size_str} in {loc_str}"
+    
+    display_title = building_name if building_name else fallback_title
+    property_type_val = p.property_type
+
+    # Canonical Location Resolution
+    addr = (p.address or "").strip()
+    pincode_match = re.search(r'\b(560\d{3})\b', addr)
+    pincode_val = pincode_match.group(1) if pincode_match else None
+    
+    clean_addr = re.sub(r'-\s*560\d{3}\b', '', addr)
+    clean_addr = re.sub(r'\b(bengaluru|bangalore|karnataka|india)\b', '', clean_addr, flags=re.I).strip(' ,')
+    
+    addr_parts = [pt.strip() for pt in clean_addr.split(',') if pt.strip()]
+    street_val = None
+    road_val = None
+    sub_loc_val = getattr(p, "sub_locality", None)
+    
+    for part in addr_parts:
+        if re.search(r'\b(road|rd|street|st|cross|main|avenue|highway)\b', part, re.I):
+            road_val = part
+        elif re.search(r'\b(block|sector|phase|stage|layout)\b', part, re.I):
+            if not sub_loc_val:
+                sub_loc_val = part
+            else:
+                street_val = part
+        elif not street_val and part.lower() != (p.locality or "").lower():
+            street_val = part
+
+    loc_val = (p.locality or "Bengaluru").title()
+    is_exact = (coord_quality == "EXACT")
+    coord_confidence = "EXACT" if is_exact else "APPROXIMATE"
+    loc_source = "SOURCE_EXACT_COORDINATES" if is_exact else "LOCALITY_BENCHMARK_CENTROID"
+    
+    # Formatted address assembly
+    addr_segments = []
+    if building_name:
+        addr_segments.append(building_name)
+    if street_val or road_val:
+        addr_segments.append(street_val or road_val)
+    if sub_loc_val and sub_loc_val.lower() not in loc_val.lower():
+        addr_segments.append(sub_loc_val)
+    addr_segments.append(loc_val)
+    addr_segments.append("Bengaluru, Karnataka" + (f" - {pincode_val}" if pincode_val else ""))
+    
+    formatted_address = ", ".join(addr_segments)
+    
+    canonical_location = CanonicalLocation(
+        property_id=p.id,
+        building_name=building_name,
+        project_name=project_name,
+        society_name=society_name,
+        street=street_val,
+        road=road_val,
+        sub_locality=sub_loc_val,
+        locality=loc_val,
+        city="Bengaluru",
+        state="Karnataka",
+        pincode=pincode_val,
+        latitude=p.latitude,
+        longitude=p.longitude,
+        coordinate_confidence=coord_confidence,
+        formatted_address=formatted_address,
+        location_source=loc_source
+    )
+
+    # Use property images ordered by is_primary DESC, order ASC
+    if p.property_images:
+        sorted_db_imgs = sorted(p.property_images, key=lambda x: (not getattr(x, 'is_primary', False), getattr(x, 'order', 0)))
+        filtered_images = [img.image_path for img in sorted_db_imgs if isinstance(img.image_path, str) and img.image_path.strip()]
+    else:
+        raw_images = p.images or []
+        filtered_images = [img for img in raw_images if isinstance(img, str) and img.strip()]
 
     # Phone contact privacy and fallback
     SEED_PHONES = {"+91 98860 12345", "+91 98450 67890", "+91 99001 88345", "+91 98110 99887", "+91 98801 33456", "+91 97400 22341", "+91 98440 66789", "+91 98866 55432", "+91 98451 77654", "+91 98800 33210"}
-    if p.source_type == "owner_listing":
-        phone_val = "[Redacted - Reveal via contact button]"
-    elif p.owner_phone and p.owner_phone.strip() and p.owner_phone not in SEED_PHONES and p.owner_phone != "Contact information unavailable":
+    
+    # Phase B Source & Provenance attributes
+    from app.services.image_provenance import ImageProvenanceService
+    from app.services.listing_service import ListingService
+
+    img_info = ImageProvenanceService.get_property_image_provenance(p)
+    anomalies = ListingService.clean_and_audit_property(p)
+
+    stype = p.source_type
+    if stype not in ["HISTORICAL_MARKET_DATA", "CURRENT_AUTHORIZED_LISTING", "PROPPULSE_DIRECT", "DEMO_TEST"]:
+        if stype == "historical_dataset" or p.source == "Bengaluru_House_Data.csv":
+            stype = "HISTORICAL_MARKET_DATA"
+        elif stype in ["owner_listing", "PROPPULSE_DIRECT"]:
+            stype = "PROPPULSE_DIRECT"
+        else:
+            stype = "DEMO_TEST"
+
+    lstatus = getattr(p, "listing_status", None)
+    if not lstatus or lstatus not in ["CURRENT", "HISTORICAL", "REFERENCE", "DEMO", "SOLD_INACTIVE", "UNKNOWN"]:
+        if stype == "PROPPULSE_DIRECT":
+            lstatus = "CURRENT"
+        elif stype == "HISTORICAL_MARKET_DATA":
+            lstatus = "HISTORICAL"
+        elif stype == "DEMO_TEST":
+            lstatus = "DEMO"
+        else:
+            lstatus = "UNKNOWN"
+
+    is_direct = (stype == "PROPPULSE_DIRECT" or p.source_type == "owner_listing")
+    
+    if p.owner_phone and p.owner_phone.strip() and p.owner_phone not in SEED_PHONES and p.owner_phone != "Contact information unavailable":
         phone_val = p.owner_phone
+    elif p.phone and p.phone.strip() and p.phone not in SEED_PHONES and p.phone != "Contact information unavailable":
+        phone_val = p.phone
     else:
         phone_val = "Contact information unavailable"
+
+    contact_avail = is_direct or bool(p.owner_phone and p.owner_phone not in SEED_PHONES and p.owner_phone != "Contact information unavailable")
+    contact_src = "Owner Provided" if contact_avail else "Historical Dataset - No Contact"
 
     out_dict = {
         "id": p.id,
         "user_id": p.user_id,
-        "title": final_title,
+        "source_listing_id": getattr(p, "source_listing_id", f"BLR-{p.id}"),
+        "city": getattr(p, "city", "Bengaluru"),
+        "title": display_title,
+        "display_title": display_title,
+        "building_name": building_name,
+        "project_name": project_name,
+        "canonical_location": canonical_location,
         "property_type": property_type_val,
         "listing_type": p.listing_type or "Buy",
         "bhk": p.bhk,
         "area_sqft": p.area_sqft,
+        "area_type": getattr(p, "area_type", "super_built_up"),
         "bathrooms": p.bathrooms,
         "balconies": p.balconies,
         "floor": p.floor,
@@ -210,32 +316,48 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "furnishing": p.furnishing,
         "amenities": p.amenities or [],
         "price": p.price,
+        "price_inr": getattr(p, "price_inr", p.price),
+        "transaction_type": getattr(p, "transaction_type", "sale"),
         "description": p.description,
         "address": p.address,
         "locality": p.locality or "",
+        "sub_locality": getattr(p, "sub_locality", None),
+        "zone": getattr(p, "zone", None),
         "latitude": p.latitude,
         "longitude": p.longitude,
-        "owner_name": p.owner_name if p.source_type == "owner_listing" else "Historical Dataset",
-        "owner_phone": phone_val,
-        "images": filtered_images,
+        "owner_name": p.owner_name if is_direct else "Historical Dataset",
+        "owner_phone": phone_val if contact_avail else "Contact information unavailable",
+        "images": img_info["images"],
+        "image_provenance": img_info["image_provenance"],
+        "image_provenance_badge": img_info["provenance_badge"],
+        "image_disclosure_note": img_info["disclosure_note"],
+        "has_genuine_image": img_info["has_genuine_image"],
+        "contact_available": contact_avail,
+        "contact_source": contact_src,
+        "anomaly_flags": anomalies,
         "nearby_places": p.nearby_places or [],
         "street_view_available": bool(p.street_view_available),
         "seller_type": p.seller_type or "Owner",
-        "seller_name": p.seller_name if p.source_type == "owner_listing" else "Historical Dataset",
-        "phone": phone_val,
+        "seller_name": p.seller_name if is_direct else "Historical Dataset",
+        "phone": phone_val if contact_avail else "Contact information unavailable",
         "verification_status": p.verification_status or "Verified",
         "source_type": p.source_type or "demo_dataset",
+        "provenance_type": stype,
+        "source_name": getattr(p, "source_name", p.source or "Bengaluru_House_Data.csv"),
+        "listing_status": lstatus,
         "source": p.source or "PropPulse Direct",
         "source_url": p.source_url or "",
         "image_source": p.image_source or "",
         "verified": bool(p.verified),
         "price_per_sqft": price_sqft,
         "price_formatted": price_formatted,
+        "coordinate_quality": coord_quality,
         "coordinate_status": coord_status,
         "property_type_source": ptype_src,
-        "society": society_val,
+        "society": society_name or building_name,
         "uploaded_images": p.property_images or [],
-        "created_at": p.created_at
+        "created_at": p.created_at,
+        "last_verified_at": getattr(p, "last_verified_at", None)
     }
     return PropertyOut(**out_dict)
 
@@ -245,93 +367,11 @@ def auto_generate_locality_sample_properties(
     lat: Optional[float] = None, 
     lon: Optional[float] = None
 ) -> List[Property]:
-    """Auto-generate realistic sample properties near the searched coordinates for 100% test coverage."""
-    default_user = db.query(User).first()
-    if not default_user:
-        return []
-
-    base_lat = lat if (lat is not None and lat != 0) else 12.9716
-    base_lon = lon if (lon is not None and lon != 0) else 77.5946
-
-    created_list = []
-    base_price_sqft = 7500.0
-    loc_lower = locality_name.lower()
-    if "koramangala" in loc_lower: base_price_sqft = 12500.0
-    elif "indiranagar" in loc_lower: base_price_sqft = 14000.0
-    elif "whitefield" in loc_lower: base_price_sqft = 7800.0
-    elif "electronic city" in loc_lower: base_price_sqft = 5600.0
-    elif "chandapura" in loc_lower: base_price_sqft = 4500.0
-
-    specs = [
-        {"ptype": "Apartment", "bhk": 2, "area": 1200, "baths": 2, "balc": 1},
-        {"ptype": "Apartment", "bhk": 3, "area": 1650, "baths": 3, "balc": 2},
-        {"ptype": "Villa", "bhk": 4, "area": 3200, "baths": 4, "balc": 3},
-        {"ptype": "Independent House", "bhk": 3, "area": 2200, "baths": 3, "balc": 2}
-    ]
-
-    for i, spec in enumerate(specs):
-        builder = BUILDERS[i % len(BUILDERS)]
-        ptype_lower = spec["ptype"].lower()
-        if ptype_lower == "apartment":
-            images = [f"/static/images/apartment_{(i % 15) + 1}.jpg"]
-        elif ptype_lower == "villa":
-            images = [f"/static/images/villa_{(i % 15) + 1}.jpg"]
-        elif ptype_lower == "independent house":
-            images = [f"/static/images/house_{(i % 15) + 1}.jpg"]
-        else:
-            images = [f"/static/images/apartment_{(i % 15) + 1}.jpg"]
-        
-        area = spec["area"]
-        price = round(base_price_sqft * area * (1 + (i * 0.1)), -4)
-
-        listing_type = "Rent" if i % 3 == 0 else "Buy"
-        p_lat = base_lat + (i * 0.003 - 0.0045)
-        p_lon = base_lon + (i * 0.0025 - 0.003)
-
-        amenities_list = ["Security", "Power Backup", "Water Supply"]
-        if spec["ptype"] == "Apartment":
-            amenities_list += ["Lift", "Gym", "Clubhouse"]
-        elif spec["ptype"] == "Villa":
-            amenities_list += ["Private Garden", "Swimming Pool", "Car Parking"]
-        
-        p = Property(
-            user_id=default_user.id,
-            title=f"{builder} {locality_name.title()} {spec['bhk']}BHK {spec['ptype']}",
-            property_type=spec["ptype"],
-            listing_type=listing_type,
-            bhk=spec["bhk"],
-            area_sqft=float(area),
-            bathrooms=spec["baths"],
-            balconies=spec["balc"],
-            floor=3 if spec["ptype"] == "Apartment" else 1,
-            total_floors=10 if spec["ptype"] == "Apartment" else 2,
-            property_age="1-5 yrs" if i % 2 == 0 else "New",
-            facing="East" if i % 2 == 0 else "North",
-            parking="Covered",
-            furnishing="Semi-Furnished",
-            amenities=amenities_list,
-            price=float(price),
-            description=f"Luxury {spec['ptype']} in {locality_name.title()} built by {builder}. Features {spec['bhk']} BHK layout with 24/7 security, power backup, covered parking, and prime GIS accessibility.",
-            address=f"Block {i+1}, Main Road, {locality_name.title()}, Bengaluru - 560001",
-            locality=locality_name.title(),
-            latitude=round(p_lat, 6),
-            longitude=round(p_lon, 6),
-            owner_name="PropPulse Verified Owner",
-            owner_phone="Contact information unavailable",
-            images=images,
-            nearby_places=[],
-            street_view_available=(i % 2 == 0),
-            seller_type="Owner" if i % 2 == 0 else "Broker",
-            seller_name="PropPulse Verified Seller",
-            phone="Contact information unavailable",
-            verification_status="Verified",
-            source_type="demo_dataset"
-        )
-        db.add(p)
-        created_list.append(p)
-
-    db.commit()
-    return created_list
+    """
+    Phase B Data Principle Rule: Disabled auto-generation of synthetic sample properties.
+    A locality with no current listings honestly reports 0 current listings.
+    """
+    return []
 
 def parse_natural_query(query_str: str):
     """Parse natural language real estate search queries into filter parameters."""
@@ -456,6 +496,10 @@ def list_properties(
     max_area: Optional[float] = Query(None),
     furnishing: Optional[str] = Query(None),
     parking: Optional[str] = Query(None),
+    current_only: Optional[bool] = Query(None, description="Filter current listings only"),
+    verified_only: Optional[bool] = Query(None, description="Filter verified listings only"),
+    has_real_image: Optional[bool] = Query(None, description="Filter listings with authentic images"),
+    source_type: Optional[str] = Query(None, description="Filter by source type e.g. PROPPULSE_DIRECT, HISTORICAL_MARKET_DATA"),
     lat: Optional[float] = Query(None),
     lon: Optional[float] = Query(None),
     page: Optional[int] = Query(None, description="Page index"),
@@ -488,6 +532,10 @@ def list_properties(
     max_area = resolve_val(max_area)
     furnishing = resolve_val(furnishing)
     parking = resolve_val(parking)
+    current_only = resolve_val(current_only)
+    verified_only = resolve_val(verified_only)
+    has_real_image = resolve_val(has_real_image)
+    source_type = resolve_val(source_type)
     page = resolve_val(page)
     page_size = resolve_val(page_size)
     
@@ -502,16 +550,22 @@ def list_properties(
     if query and isinstance(query, str) and query.strip():
         parsed_filters = parse_natural_query(query)
 
-    # 1. Locality strict filter
+    # 1. Locality strict filter (with flexible Road/Main Road suffix support)
     final_locality = parsed_filters.get("locality")
     if final_locality:
-        search_pattern = f"%{final_locality}%"
-        q = q.filter(Property.locality.ilike(search_pattern))
+        if final_locality.lower().endswith(" road"):
+            base_loc = final_locality[:-5].strip()
+            q = q.filter(or_(Property.locality.ilike(f"%{final_locality}%"), Property.locality.ilike(f"%{base_loc}%")))
+        else:
+            q = q.filter(Property.locality.ilike(f"%{final_locality}%"))
     elif query and isinstance(query, str) and query.strip():
         # Fallback to splitting by comma for traditional locality searches
         clean_locality = query.strip().split(',')[0].strip()
-        search_pattern = f"%{clean_locality}%"
-        q = q.filter(Property.locality.ilike(search_pattern))
+        if clean_locality.lower().endswith(" road"):
+            base_loc = clean_locality[:-5].strip()
+            q = q.filter(or_(Property.locality.ilike(f"%{clean_locality}%"), Property.locality.ilike(f"%{base_loc}%")))
+        else:
+            q = q.filter(Property.locality.ilike(f"%{clean_locality}%"))
         
     # 2. Strict constraint filters
     final_property_type = property_type or parsed_filters.get("property_type")
@@ -547,6 +601,36 @@ def list_properties(
     if parking and parking != "All":
         q = q.filter(Property.parking.ilike(parking))
 
+    # Phase C Filters
+    if current_only:
+        q = q.filter(
+            (Property.source_type.in_(["PROPPULSE_DIRECT", "CURRENT_AUTHORIZED_LISTING", "owner_listing"])) |
+            (Property.listing_status == "CURRENT")
+        )
+
+    if verified_only:
+        q = q.filter(
+            (Property.verification_status.in_(["Verified", "VERIFIED"])) |
+            (Property.verified == True)
+        )
+
+    if has_real_image:
+        q = q.filter(
+            (Property.image_provenance.in_(["OWNER_UPLOADED", "AUTHORIZED_PROVIDER", "LICENSED_EXTERNAL"])) |
+            (Property.image_count > 0)
+        )
+
+    if source_type:
+        st = source_type.strip()
+        if st.lower() == "historical":
+            q = q.filter(Property.source_type.in_(["HISTORICAL_MARKET_DATA", "historical_dataset"]))
+        elif st.lower() in ["direct", "proppulse_direct"]:
+            q = q.filter(Property.source_type.in_(["PROPPULSE_DIRECT", "owner_listing"]))
+        elif st.lower() == "demo":
+            q = q.filter(Property.source_type.in_(["DEMO_TEST", "demo_dataset"]))
+        else:
+            q = q.filter(Property.source_type.ilike(st))
+
     # Apply pagination skip/limit
     total = q.count()
     if page is not None and page_size is not None:
@@ -556,6 +640,46 @@ def list_properties(
     properties = q.order_by(Property.created_at.desc()).offset(skip).limit(limit).all()
     enriched_items = [enrich_property_out(p) for p in properties]
     return PropertyListOut(items=enriched_items, total=total, page=page, page_size=page_size)
+
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    """Return live dataset statistics across historical, demo, and owner listings."""
+    total = db.query(Property).count()
+    historical = db.query(Property).filter(Property.source_type == "historical_dataset").count()
+    demo = db.query(Property).filter(Property.source_type == "demo_dataset").count()
+    owner = db.query(Property).filter(Property.source_type == "owner_listing").count()
+    buy_count = db.query(Property).filter(Property.transaction_type == "sale").count()
+    rent_count = db.query(Property).filter(Property.transaction_type == "rent").count()
+    exact_count = db.query(Property).filter(Property.coordinate_quality == "EXACT").count()
+    approx_count = db.query(Property).filter(Property.coordinate_quality == "LOCALITY_APPROXIMATE").count()
+    
+    apartments = db.query(Property).filter(Property.property_type.ilike("%Apartment%")).count()
+    villas = db.query(Property).filter(Property.property_type.ilike("%Villa%")).count()
+    houses = db.query(Property).filter(Property.property_type.ilike("%House%")).count()
+    plots = db.query(Property).filter(Property.property_type.ilike("%Plot%")).count()
+    
+    return {
+        "total_properties": total,
+        "historical_properties": historical,
+        "demo_properties": demo,
+        "owner_properties": owner,
+        "buy_properties": buy_count,
+        "rent_properties": rent_count,
+        "dataset_listings": historical,
+        "verified_direct": owner + demo,
+        "exact_coords": exact_count,
+        "approx_coords": approx_count,
+        "apartments": apartments,
+        "villas": villas,
+        "houses": houses,
+        "plots": plots
+    }
+
+@router.get("/dataset-stats")
+def get_dataset_stats(db: Session = Depends(get_db)):
+    """Return metadata breakdown for catalog datasets."""
+    return get_dashboard_stats(db)
 
 
 @router.get("/{id}", response_model=PropertyOut)
@@ -729,6 +853,32 @@ def verify_property(
     db.refresh(prop)
     return enrich_property_out(prop)
 
+@router.get("/{id}/images", response_model=List[dict])
+def get_property_images(
+    id: int,
+    db: Session = Depends(get_db)
+):
+    """Retrieve all images for a property ordered by primary status and display order."""
+    prop = db.query(Property).filter(Property.id == id).first()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    images = db.query(PropertyImage).filter(PropertyImage.property_id == id).order_by(
+        PropertyImage.is_primary.desc(), PropertyImage.order.asc()
+    ).all()
+
+    return [{
+        "id": img.id,
+        "property_id": img.property_id,
+        "image_path": img.image_path,
+        "source_type": img.source_type or "owner_upload",
+        "source_name": img.source_name or "Owner Uploaded",
+        "source_url": img.source_url or "",
+        "is_primary": bool(img.is_primary),
+        "order": img.order,
+        "uploaded_at": img.uploaded_at
+    } for img in images]
+
 @router.post("/{id}/images", response_model=List[dict])
 async def upload_property_images(
     id: int,
@@ -736,38 +886,175 @@ async def upload_property_images(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Multipart upload for genuine direct listing property photos."""
+    """Multipart upload for authentic property photos. Owner or Admin authorization required."""
     prop = db.query(Property).filter(Property.id == id).first()
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
-    if prop.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this property")
-        
+    if prop.user_id != current_user.id and getattr(current_user, 'role', 'USER') != 'ADMIN':
+        raise HTTPException(status_code=403, detail="Not authorized to modify images for this property")
+
     saved_refs = []
-    # Clear existing if uploading fresh batch or just append them preserving order index
     start_order = db.query(PropertyImage).filter(PropertyImage.property_id == id).count()
-    
+    existing_primary = db.query(PropertyImage).filter(
+        PropertyImage.property_id == id, PropertyImage.is_primary == True
+    ).first()
+
     for i, file in enumerate(files):
-        if not file.content_type.startswith("image/"):
-            raise HTTPException(status_code=400, detail=f"File '{file.filename}' is not a valid image")
-            
+        # StorageService validates file size <= 5MB, allowed extension, MIME type, and PIL binary content
         path = await StorageService.upload_property_image(file, id)
+        
+        is_first_primary = (existing_primary is None and i == 0)
+
         img_db = PropertyImage(
             property_id=id,
             image_path=path,
-            image_source="user_upload",
-            order=start_order + i
+            source_type="owner_upload",
+            source_name=f"Uploaded by Owner ({current_user.full_name or current_user.email})",
+            source_url="",
+            is_primary=is_first_primary,
+            order=start_order + i,
+            uploaded_by=current_user.id
         )
         db.add(img_db)
         db.commit()
         db.refresh(img_db)
+
         saved_refs.append({
             "id": img_db.id,
+            "property_id": img_db.property_id,
             "image_path": img_db.image_path,
+            "source_type": img_db.source_type,
+            "source_name": img_db.source_name,
+            "is_primary": img_db.is_primary,
             "order": img_db.order
         })
-        
+
     return saved_refs
+
+from pydantic import BaseModel, HttpUrl
+
+class ExternalImageRequest(BaseModel):
+    image_url: str
+    source_name: str
+    source_url: Optional[str] = ""
+
+@router.post("/{id}/external-images", response_model=dict)
+def add_external_property_image(
+    id: int,
+    payload: ExternalImageRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Add a legitimate licensed external property image URL."""
+    prop = db.query(Property).filter(Property.id == id).first()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    if prop.user_id != current_user.id and getattr(current_user, 'role', 'USER') != 'ADMIN':
+        raise HTTPException(status_code=403, detail="Not authorized to modify images for this property")
+
+    url = payload.image_url.strip()
+    if not url.startswith("https://") and not url.startswith("http://"):
+        raise HTTPException(status_code=400, detail="Invalid image URL scheme. Must be an HTTP/HTTPS URL.")
+
+    start_order = db.query(PropertyImage).filter(PropertyImage.property_id == id).count()
+    existing_primary = db.query(PropertyImage).filter(
+        PropertyImage.property_id == id, PropertyImage.is_primary == True
+    ).first()
+
+    img_db = PropertyImage(
+        property_id=id,
+        image_path=url,
+        source_type="licensed_external",
+        source_name=payload.source_name or "Licensed External Source",
+        source_url=payload.source_url or "",
+        is_primary=(existing_primary is None),
+        order=start_order,
+        uploaded_by=current_user.id
+    )
+    db.add(img_db)
+    db.commit()
+    db.refresh(img_db)
+
+    return {
+        "id": img_db.id,
+        "property_id": img_db.property_id,
+        "image_path": img_db.image_path,
+        "source_type": img_db.source_type,
+        "source_name": img_db.source_name,
+        "source_url": img_db.source_url,
+        "is_primary": img_db.is_primary,
+        "order": img_db.order
+    }
+
+@router.delete("/{id}/images/{image_id}", response_model=dict)
+def delete_property_image(
+    id: int,
+    image_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete specific property image. Owner or Admin authorization required."""
+    prop = db.query(Property).filter(Property.id == id).first()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    if prop.user_id != current_user.id and getattr(current_user, 'role', 'USER') != 'ADMIN':
+        raise HTTPException(status_code=403, detail="Not authorized to modify images for this property")
+
+    img_db = db.query(PropertyImage).filter(
+        PropertyImage.id == image_id, PropertyImage.property_id == id
+    ).first()
+    if not img_db:
+        raise HTTPException(status_code=404, detail="Image record not found")
+
+    # Safely delete disk file if local upload
+    if img_db.source_type == "owner_upload" or img_db.image_path.startswith("/static/uploads/"):
+        StorageService.delete_property_image_file(img_db.image_path)
+
+    was_primary = img_db.is_primary
+    db.delete(img_db)
+    db.commit()
+
+    # If deleted image was primary, set next image as primary
+    if was_primary:
+        next_img = db.query(PropertyImage).filter(PropertyImage.property_id == id).order_by(PropertyImage.order.asc()).first()
+        if next_img:
+            next_img.is_primary = True
+            db.commit()
+
+    return {"message": "Image deleted successfully", "image_id": image_id}
+
+@router.put("/{id}/images/{image_id}/primary", response_model=dict)
+def set_primary_property_image(
+    id: int,
+    image_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Set specified image as the primary image for the property."""
+    prop = db.query(Property).filter(Property.id == id).first()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    if prop.user_id != current_user.id and getattr(current_user, 'role', 'USER') != 'ADMIN':
+        raise HTTPException(status_code=403, detail="Not authorized to modify images for this property")
+
+    target_img = db.query(PropertyImage).filter(
+        PropertyImage.id == image_id, PropertyImage.property_id == id
+    ).first()
+    if not target_img:
+        raise HTTPException(status_code=404, detail="Image record not found")
+
+    # Reset all images for this property to is_primary = False
+    db.query(PropertyImage).filter(PropertyImage.property_id == id).update({"is_primary": False})
+    
+    target_img.is_primary = True
+    db.commit()
+    db.refresh(target_img)
+
+    return {
+        "message": "Primary image updated successfully",
+        "primary_image_id": target_img.id,
+        "image_path": target_img.image_path
+    }
 
 @router.post("/{id}/contact")
 def get_property_contact_details(

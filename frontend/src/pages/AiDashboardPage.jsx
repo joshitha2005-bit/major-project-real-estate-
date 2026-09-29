@@ -8,8 +8,9 @@ import { NearbyPlacesList } from '../components/NearbyPlacesList';
 import { 
   Sparkles, Brain, Eye, FileText, ShieldAlert, 
   TrendingUp, IndianRupee, Download, ArrowLeft, Loader2, 
-  CheckCircle2, AlertTriangle, Cpu, Layers, Compass, ThumbsUp, ThumbsDown, Lock
+  CheckCircle2, AlertTriangle, Cpu, Layers, Compass, ThumbsUp, ThumbsDown, Lock, MapPin
 } from 'lucide-react';
+import { resolvePropertyDisplay } from '../utils/propertyLocationUtils';
 
 export const AiDashboardPage = () => {
   const { id } = useParams();
@@ -134,6 +135,7 @@ export const AiDashboardPage = () => {
 
   const { property, image_ai, text_ai, safety_guard, price_prediction } = aiData;
   const shap = price_prediction.shap_explanation || {};
+  const disp = resolvePropertyDisplay(property);
 
   const mapSearchResult = {
     latitude: property.latitude,
@@ -183,17 +185,40 @@ export const AiDashboardPage = () => {
           </button>
         </div>
 
-        {/* Dashboard Title Header */}
+        {/* Dashboard Title Header: CRITICAL 3-TIER HIERARCHY */}
         <div className="glass-card p-8 rounded-3xl border border-brand-500/30 bg-gradient-to-r from-slate-950 via-dark-950 to-brand-950/40 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-              <span>Full AI Analytics & Explainable Valuation Engine</span>
+          <div className="space-y-2.5 z-10">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 text-xs font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+                <span>Full AI Analytics & Explainable Valuation Engine</span>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded text-[10px] font-semibold border ${
+                disp.isExact 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+              }`}>
+                {disp.coordinateAccuracy}
+              </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold font-outfit text-white">{property.title}</h1>
-            <p className="text-xs text-slate-400 flex items-center gap-1">
-              <span>{property.address}</span>
+
+            {/* 1. ACTUAL BUILDING / PROJECT / PROPERTY NAME */}
+            <h1 className="text-2xl sm:text-3xl font-extrabold font-outfit text-white leading-tight">
+              {disp.buildingName}
+            </h1>
+
+            {/* 2. SUB-LOCALITY / LOCALITY, BENGALURU */}
+            <p className="text-sm font-semibold text-brand-300 flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-brand-400 flex-shrink-0" />
+              <span>{disp.locationLine}</span>
             </p>
+
+            {/* 3. STREET / ROAD / FULL ADDRESS */}
+            {disp.addressLine && (
+              <p className="text-xs text-slate-400 pl-5.5">
+                {disp.addressLine}
+              </p>
+            )}
           </div>
         </div>
 
@@ -556,6 +581,7 @@ export const AiDashboardPage = () => {
           </h3>
           <MapView
             searchResult={mapSearchResult}
+            property={property}
             nearbyPlaces={property.nearby_places || []}
           />
           <NearbyPlacesList places={property.nearby_places || []} />

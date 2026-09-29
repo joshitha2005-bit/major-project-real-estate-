@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Building2, MapPin, Bed, Maximize2, Phone, Sparkles, 
-  Eye, Compass, CheckCircle2, User, MessageSquare, X 
+  Eye, Compass, CheckCircle2, User, MessageSquare, X, Navigation 
 } from 'lucide-react';
+import { resolvePropertyDisplay, navigateToProperty } from '../utils/propertyLocationUtils';
 
 const getCleanFallbackImage = (id, ptype = "") => {
   const ptype_lower = (ptype || "").toLowerCase();
@@ -50,54 +51,41 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
   const [showContactModal, setShowContactModal] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
 
-  const isHistorical = property.source_type === 'historical_dataset' || property.source === 'Bengaluru_House_Data.csv';
+  const isHistorical = property && (
+    property.source_type === 'historical_dataset' ||
+    property.source_type === 'HISTORICAL_MARKET_DATA' ||
+    property.source === 'Bengaluru_House_Data.csv' ||
+    property.source === 'Real Estate Data V21.csv' ||
+    property.source === 'Kaggle Research Dataset' ||
+    property.listing_status === 'HISTORICAL' ||
+    property.listing_status === 'HISTORICAL MARKET DATA'
+  );
+  const isDirect = property && (
+    property.source === 'PropPulse Direct' ||
+    property.source_type === 'owner_listing' ||
+    property.source_type === 'PROPPULSE_DIRECT'
+  ) && !isHistorical;
   
-  // Look for the first image in the array that is not a duplicate
-  let chosenImage = null;
-  if (property.images && property.images.length > 0) {
-    for (const img of property.images) {
-      if (img && !checkDuplicate(img)) {
-        chosenImage = img;
-        break;
-      }
-    }
+  // Extract primary / first image if available
+  let primaryImage = null;
+  if (property.uploaded_images && property.uploaded_images.length > 0) {
+    const primaryObj = property.uploaded_images.find(img => img.is_primary) || property.uploaded_images[0];
+    primaryImage = primaryObj.image_path;
+  } else if (property.images && property.images.length > 0) {
+    primaryImage = property.images[0];
   }
-  
-  const mainImage = chosenImage || getCleanFallbackImage(property.id || 0, property.property_type);
 
+  const [imgError, setImgError] = useState(false);
+  const mainImage = (!imgError && primaryImage && primaryImage.trim() !== '') ? primaryImage : null;
+
+  // Phone contact privacy: ONLY allowed for genuine owner listings
+  const isOwnerListing = property.source_type === 'owner_listing';
   const displayPhone = (property.owner_phone && property.owner_phone !== 'Contact information unavailable' && property.owner_phone.trim() !== '')
     ? property.owner_phone
-    : "+91 98860 12345";
+    : null;
 
-  const hasPhone = true;
-
-  const getRealisticName = (prop) => {
-    if (prop.society && prop.society.trim() !== '' && prop.society.toLowerCase() !== 'none') {
-      return prop.society;
-    }
-    if (prop.title && !prop.title.includes("BHK in") && !prop.title.includes("BHK —") && !prop.title.includes("BHK Property") && prop.title.split(' ').length > 2) {
-      return prop.title;
-    }
-
-    const builders = [
-      "Prestige", "Sobha", "Brigade", "Puravankara", "Shriram", 
-      "Salarpuria Sattva", "Godrej", "L&T Rejuve", "Assetz", "Valmark",
-      "Adarsh", "Casagrand", "Rohan", "Mahaveer", "Trendsquare"
-    ];
-    const suffixes = [
-      "Lakeside", "Elanza", "Signature", "Gateway", "Woodland",
-      "Park", "Meadows", "Ferns", "Ascent", "Green Meadows",
-      "Serenity", "Boulevard", "Vista", "County", "Palms",
-      "Splendour", "Lake Ridge", "Heights", "Terraces", "Orchid"
-    ];
-    
-    const id = prop.id || 0;
-    const builder = builders[id % builders.length];
-    const suffix = suffixes[(id * 7) % suffixes.length];
-    return `${builder} ${suffix}`;
-  };
-
-  const displayName = getRealisticName(property);
+  const disp = resolvePropertyDisplay(property);
+  const displayName = disp.buildingName;
 
   return (
     <>
@@ -105,12 +93,19 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
         <div>
           {/* Image Canvas */}
           <div className="relative aspect-[16/10] overflow-hidden bg-slate-900">
-            <img 
-              src={mainImage} 
-              onError={(e) => { e.target.src = getCleanFallbackImage(property.id || 0, property.property_type); }}
-              alt={displayName} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-            />
+            {mainImage && !isHistorical ? (
+              <img 
+                src={mainImage} 
+                onError={() => setImgError(true)}
+                alt={displayName} 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/90 text-slate-500 gap-2 p-4">
+                <Building2 className="w-10 h-10 text-slate-700" />
+                <span className="text-xs font-semibold text-slate-400">Image Not Available</span>
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-transparent opacity-80"></div>
             
             {/* Property Type Badge */}
@@ -119,23 +114,27 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
               <span>{property.property_type && property.property_type !== 'Not specified' ? property.property_type : 'Property'}</span>
             </div>
 
-            {/* Listing Type & Source Badges */}
-            <div className="absolute top-3 right-3 flex items-center gap-1.5">
-              <span className="px-2.5 py-1 rounded-full bg-dark-950/85 backdrop-blur-md border border-slate-700/85 text-[10px] font-extrabold uppercase tracking-wider text-emerald-400">
-                {property.listing_type || 'Dataset'}
-              </span>
-              <span className={`px-2.5 py-1 rounded-full backdrop-blur-md border text-[10px] font-bold ${
-                isHistorical
-                  ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                  : property.verification_status === 'Verified'
-                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                    : 'bg-brand-500/20 border-brand-500/40 text-brand-300'
+            {/* Listing Status & Source Badges */}
+            <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
+              <span className={`px-2.5 py-1 rounded-full backdrop-blur-md border text-[10px] font-extrabold uppercase tracking-wider ${
+                isDirect
+                  ? 'bg-emerald-500/25 border-emerald-500/50 text-emerald-300'
+                  : (property.source_type === 'authorized_provider' || property.listing_status === 'AUTHORIZED')
+                    ? 'bg-blue-500/25 border-blue-500/50 text-blue-300'
+                    : property.listing_status === 'REFERENCE'
+                      ? 'bg-sky-500/25 border-sky-500/50 text-sky-300'
+                      : 'bg-amber-500/25 border-amber-500/50 text-amber-300'
               }`}>
-                {isHistorical
-                  ? 'Historical Dataset'
-                  : property.verification_status === 'Verified'
-                    ? 'Verified Direct'
-                    : 'PropPulse Direct'}
+                {isDirect
+                  ? 'PROPPULSE DIRECT'
+                  : (property.source_type === 'authorized_provider' || property.listing_status === 'AUTHORIZED')
+                    ? 'AUTHORIZED PROVIDER'
+                    : property.listing_status === 'REFERENCE'
+                      ? 'MARKET REFERENCE'
+                      : 'HISTORICAL MARKET DATA'}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-slate-900/90 backdrop-blur-md border border-slate-700 text-[9px] font-semibold text-slate-350">
+                {isDirect && property.has_genuine_image ? 'OWNER UPLOADED IMAGE' : (property.images && property.images.length > 0 ? 'LOCATION/BUILDING REFERENCE' : 'PROPERTY IMAGE UNAVAILABLE')}
               </span>
             </div>
 
@@ -145,29 +144,38 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
                 {property.price_formatted}
               </div>
               <span className="text-[10px] bg-slate-950/80 text-slate-350 px-2 py-1 rounded-lg border border-slate-800 font-mono">
-                Source asking price
+                {disp.pricePerSqftText}
               </span>
             </div>
           </div>
 
-          {/* Details Body */}
-          <div className="p-5 space-y-3.5">
+          {/* Details Body — CRITICAL 3-TIER HIERARCHY */}
+          <div className="p-5 space-y-3">
             <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-slate-500">
-              <span>{property.locality || 'Bengaluru'}</span>
+              <span className="text-brand-400 font-semibold">{property.locality || 'Bengaluru'}</span>
               <span className="text-slate-700">•</span>
-              <span className={property.verification_status === 'Verified' ? 'text-emerald-400' : 'text-slate-400'}>
-                {isHistorical ? 'Historical Data' : property.verification_status || 'Pending Verification'}
+              <span className={isHistorical ? 'text-amber-400 font-semibold' : 'text-emerald-400 font-semibold'}>
+                {isDirect ? 'PropPulse Direct' : 'Historical Dataset'}
               </span>
             </div>
 
+            {/* 1. ACTUAL BUILDING / PROJECT / PROPERTY NAME */}
             <h3 className="text-base font-bold text-white line-clamp-1 group-hover:text-brand-300 transition-colors font-outfit">
-              {displayName}
+              {disp.buildingName}
             </h3>
 
-            <p className="text-xs text-slate-400 flex items-center gap-1.5 line-clamp-1">
+            {/* 2. SUB-LOCALITY / LOCALITY, BENGALURU */}
+            <p className="text-xs text-brand-300 font-semibold flex items-center gap-1.5 line-clamp-1">
               <MapPin className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
-              <span>{property.address}</span>
+              <span>{disp.locationLine}</span>
             </p>
+
+            {/* 3. STREET / ROAD / FULL ADDRESS (when available) */}
+            {disp.addressLine && (
+              <p className="text-[11px] text-slate-400 line-clamp-1 pl-5">
+                {disp.addressLine}
+              </p>
+            )}
 
             {/* Spec Icons Grid */}
             <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
@@ -181,25 +189,24 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
               </div>
             </div>
 
-            {/* Provenance Indicators */}
-            <div className="pt-2 border-t border-slate-800/60 space-y-1 text-[11px] text-slate-400">
-              {property.society && (
-                <div className="flex justify-between">
-                  <span>Society:</span>
-                  <span className="text-slate-200 font-semibold">{property.society}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span>Location:</span>
-                <span className={`font-semibold ${property.coordinate_status === 'EXACT' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {property.coordinate_status === 'EXACT' ? 'Exact property location' : 'Approximate locality location'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Source:</span>
-                <span className="text-slate-300 font-semibold">{isHistorical ? 'Historical Dataset' : 'PropPulse Direct'}</span>
-              </div>
+            {/* Location Accuracy Badge */}
+            <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-800/60">
+              <span className="text-slate-400">Location Accuracy:</span>
+              <span className={`font-semibold px-2 py-0.5 rounded text-[10px] ${
+                disp.isExact 
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+              }`}>
+                {disp.coordinateAccuracy}
+              </span>
             </div>
+
+            {/* Historical Warning */}
+            {isHistorical && (
+              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300 leading-snug">
+                <strong>Historical Data:</strong> Market-data record — price and availability are benchmarked.
+              </div>
+            )}
           </div>
         </div>
 
@@ -233,8 +240,18 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
             )}
           </div>
 
-          {/* Contact buttons or status fallbacks */}
-          {hasPhone ? (
+          {/* Quick Navigate Button with real browser geolocation */}
+          <button
+            onClick={() => navigateToProperty(property)}
+            title={disp.isExact ? "Navigate to exact property coordinates" : "Directions to locality area"}
+            className="w-full py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold text-center flex items-center justify-center gap-1.5 transition-all text-xs"
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            <span>{disp.isExact ? "Navigate to Property" : "Directions to Area"}</span>
+          </button>
+
+          {/* Contact buttons ONLY for real verified owner listings */}
+          {isOwnerListing && displayPhone ? (
             <button
               onClick={() => setShowContactModal(true)}
               className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-center flex items-center justify-center gap-1.5 transition-all text-xs"
@@ -242,16 +259,7 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Contact Owner</span>
             </button>
-          ) : (
-            <button
-              disabled
-              title="Owner contact information is not available for this dataset record."
-              className="w-full py-2.5 rounded-xl bg-slate-800 text-slate-500 border border-slate-850 font-semibold text-center flex items-center justify-center gap-1.5 text-xs cursor-not-allowed"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span>Contact unavailable</span>
-            </button>
-          )}
+          ) : null}
         </div>
       </div>
 

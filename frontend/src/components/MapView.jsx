@@ -1,7 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { Eye, ArrowLeft, ExternalLink, Loader2, MapPin } from 'lucide-react';
+import { Eye, ArrowLeft, ExternalLink, Loader2, MapPin, Navigation } from 'lucide-react';
+import { 
+  resolvePropertyDisplay, 
+  navigateToProperty, 
+  openInOpenStreetMap, 
+  openInGoogleMaps 
+} from '../utils/propertyLocationUtils';
 
 // Fix Leaflet default icon paths in React Vite environment
 delete L.Icon.Default.prototype._getIconUrl;
@@ -93,7 +99,7 @@ const loadGoogleMapsScript = (apiKey) => {
   });
 };
 
-export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [] }) => {
+export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [], property = null }) => {
   const [showStreetView, setShowStreetView] = useState(false);
   const [streetViewStatus, setStreetViewStatus] = useState('idle'); // 'idle' | 'loading' | 'available' | 'unavailable' | 'error'
   const [imageryDate, setImageryDate] = useState('');
@@ -102,12 +108,15 @@ export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [] }) =>
   const panoramaRef = useRef(null);
   const panoramaInstance = useRef(null);
 
-  const defaultCenter = searchResult 
-    ? [searchResult.latitude, searchResult.longitude]
-    : (currentLocation ? [currentLocation.latitude, currentLocation.longitude] : [12.9352, 77.6245]); // Koramangala default
+  const targetProperty = property || (searchResult?.property ? searchResult.property : (searchResult?.title ? searchResult : null));
+  const disp = resolvePropertyDisplay(targetProperty || searchResult);
 
-  const lat = searchResult?.latitude || currentLocation?.latitude;
-  const lon = searchResult?.longitude || currentLocation?.longitude;
+  const lat = targetProperty?.latitude || searchResult?.latitude || currentLocation?.latitude;
+  const lon = targetProperty?.longitude || searchResult?.longitude || currentLocation?.longitude;
+
+  const defaultCenter = (lat && lon) 
+    ? [lat, lon]
+    : (searchResult ? [searchResult.latitude, searchResult.longitude] : [12.9352, 77.6245]);
 
   const handleViewStreetView = async () => {
     if (!lat || !lon) {
@@ -191,10 +200,17 @@ export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [] }) =>
     }
   };
 
+  const navTarget = targetProperty || {
+    latitude: lat,
+    longitude: lon,
+    coordinate_status: disp.isExact ? 'EXACT' : 'APPROXIMATE',
+    title: disp.buildingName
+  };
+
   return (
     <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl glass-card">
       {/* View Street View Button overlay */}
-      {!showStreetView && searchResult && (
+      {!showStreetView && (lat && lon) && (
         <button
           onClick={handleViewStreetView}
           className="absolute top-4 right-4 z-[1000] px-4 py-2 bg-slate-900/90 hover:bg-slate-800 text-white text-xs font-bold rounded-xl border border-slate-800 shadow-lg flex items-center gap-1.5 transition-all hover:scale-105"
@@ -204,7 +220,7 @@ export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [] }) =>
         </button>
       )}
 
-      {/* Leaflet Map (Hidden/Inactive when Street View panel overlays it) */}
+      {/* Leaflet OpenStreetMap */}
       <MapContainer
         center={defaultCenter}
         zoom={14}
@@ -218,29 +234,87 @@ export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [] }) =>
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Target Search Location Marker */}
-        {searchResult && (
+        {/* Target Property / Search Location Marker */}
+        {(lat && lon) && (
           <Marker 
-            position={[searchResult.latitude, searchResult.longitude]} 
+            position={[lat, lon]} 
             icon={searchLocationIcon}
           >
             <Popup>
-              <div className="p-1 space-y-2 min-w-[220px]">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-1">
-                  <span className="text-xs uppercase tracking-wider font-bold text-brand-400">Search Target</span>
-                  <span className="text-[10px] bg-brand-500/20 text-brand-300 px-1.5 py-0.5 rounded font-mono">GIS Active</span>
+              <div className="p-2 space-y-2 min-w-[250px] max-w-[300px]">
+                {/* Accuracy Status Badge */}
+                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                    disp.isExact 
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                      : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  }`}>
+                    {disp.coordinateAccuracy}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {disp.propertyType}
+                  </span>
                 </div>
-                <h4 className="text-sm font-bold text-slate-100">{searchResult.formatted_address}</h4>
-                {searchResult.estimated_price_sqft && (
-                  <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
-                    <p className="text-[11px] text-slate-400">Est. Real Estate Value:</p>
-                    <p className="text-sm font-extrabold text-emerald-400">{searchResult.price_range}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Avg: ₹{searchResult.estimated_price_sqft.toLocaleString()} / sq.ft</p>
+
+                {/* 1. ACTUAL BUILDING / PROJECT / PROPERTY NAME */}
+                <h4 className="text-sm font-bold text-white font-outfit leading-tight">
+                  {disp.buildingName}
+                </h4>
+
+                {/* 2. SUB-LOCALITY / LOCALITY, BENGALURU */}
+                <p className="text-xs text-brand-300 font-semibold flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-brand-400 flex-shrink-0" />
+                  <span>{disp.locationLine}</span>
+                </p>
+
+                {/* 3. FULL ADDRESS */}
+                {disp.addressLine && (
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    {disp.addressLine}
+                  </p>
+                )}
+
+                {/* Price & Rate */}
+                {(targetProperty?.price_formatted || searchResult?.price_range) && (
+                  <div className="bg-slate-900/90 p-2 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block">Price</span>
+                      <span className="text-xs font-extrabold text-emerald-400">
+                        {targetProperty?.price_formatted || searchResult?.price_range}
+                      </span>
+                    </div>
+                    {disp.pricePerSqftText && (
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {disp.pricePerSqftText}
+                      </span>
+                    )}
                   </div>
                 )}
-                <p className="text-[10px] text-slate-400 font-mono">
-                  Lat: {searchResult.latitude.toFixed(4)}, Lon: {searchResult.longitude.toFixed(4)}
-                </p>
+
+                {/* Coordinates */}
+                <div className="text-[10px] text-slate-400 font-mono flex items-center justify-between">
+                  <span>Lat: {Number(lat).toFixed(4)}</span>
+                  <span>Lon: {Number(lon).toFixed(4)}</span>
+                </div>
+
+                {/* Action Buttons: Open in OpenStreetMap + Get Directions */}
+                <div className="grid grid-cols-2 gap-1.5 pt-1.5 border-t border-slate-800">
+                  <button
+                    onClick={() => openInOpenStreetMap({ latitude: lat, longitude: lon })}
+                    className="px-2 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold rounded-lg border border-slate-700 flex items-center justify-center gap-1 transition-all"
+                  >
+                    <ExternalLink className="w-3 h-3 text-sky-400" />
+                    <span>OpenStreetMap</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigateToProperty(navTarget)}
+                    className="px-2 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-1 transition-all shadow-md shadow-emerald-600/30"
+                  >
+                    <Navigation className="w-3 h-3" />
+                    <span>Get Directions</span>
+                  </button>
+                </div>
               </div>
             </Popup>
           </Marker>
@@ -336,27 +410,54 @@ export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [] }) =>
             )}
 
             {(streetViewStatus === 'unavailable' || streetViewStatus === 'error') && (
-              <div className="p-6 text-center space-y-4 max-w-sm">
+              <div className="p-6 text-center space-y-4 max-w-md">
                 <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center mx-auto border border-slate-700">
-                  <MapPin className="w-6 h-6 text-slate-500" />
+                  <MapPin className="w-6 h-6 text-slate-400" />
                 </div>
-                <div className="space-y-1.5">
-                  <h4 className="text-sm font-bold text-white">Street View Unavailable</h4>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-white">Street View imagery is unavailable at this location.</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Street View imagery is not available near this property.
+                    Exact navigation and high-precision OpenStreetMap / Google Maps views remain fully available.
                   </p>
                 </div>
+
+                {/* Accurate Coordinate details */}
+                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-left space-y-1 text-xs">
+                  <p className="font-semibold text-white truncate">{disp.buildingName}</p>
+                  <p className="text-slate-400 text-[11px] truncate">{disp.fullAddress}</p>
+                  <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-800 text-slate-400 font-mono">
+                    <span>{disp.coordinatesText}</span>
+                    <span className={disp.isExact ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                      {disp.coordinateAccuracy}
+                    </span>
+                  </div>
+                </div>
+
                 {lat && lon && (
-                  <div className="pt-2">
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/20 text-xs font-semibold rounded-xl transition-all"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                    <button
+                      onClick={() => navigateToProperty(navTarget)}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>{disp.isExact ? "Navigate to Property" : "Directions to Area"}</span>
+                    </button>
+
+                    <button
+                      onClick={() => openInGoogleMaps({ latitude: lat, longitude: lon })}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 text-xs font-semibold rounded-xl transition-all"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Open Location in Google Maps</span>
-                    </a>
+                      <span>{disp.isExact ? "Open Exact Location" : "View Area on Map"}</span>
+                    </button>
+
+                    <button
+                      onClick={() => openInOpenStreetMap({ latitude: lat, longitude: lon })}
+                      className="col-span-1 sm:col-span-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-all"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Open in OpenStreetMap</span>
+                    </button>
                   </div>
                 )}
               </div>
