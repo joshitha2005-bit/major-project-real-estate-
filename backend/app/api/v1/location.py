@@ -76,6 +76,8 @@ async def get_nearby_places(
     places = await GeoapifyService.get_nearby_places(lat=lat, lon=lon, radius_meters=radius)
     return [NearbyPlace(**p) for p in places]
 
+from app.core.bengaluru_market_rates import get_locality_market_rate
+
 @router.get("/locality-stats")
 async def get_locality_stats(
     locality: str = Query(..., description="Locality name e.g. Koramangala"),
@@ -83,17 +85,19 @@ async def get_locality_stats(
     lon: Optional[float] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Calculate market statistics breakdown for a searched locality."""
+    """Calculate realistic, source-backed market statistics breakdown for a searched locality."""
     loc_clean = locality.strip().lower()
     search_pattern = f"%{loc_clean}%"
     
+    # 1. Fetch benchmark rate from Google / portal verified market rates
+    rate_info = get_locality_market_rate(locality, lat, lon)
+    benchmark_avg_sqft = rate_info["avg_sqft"]
+
     props = db.query(Property).filter(
         (Property.address.ilike(search_pattern)) | 
-        (Property.title.ilike(search_pattern))
+        (Property.title.ilike(search_pattern)) |
+        (Property.locality.ilike(search_pattern))
     ).all()
-    
-    if not props:
-        props = db.query(Property).all()
         
     apartments = [p for p in props if "apartment" in p.property_type.lower() or "flat" in p.property_type.lower()]
     villas = [p for p in props if "villa" in p.property_type.lower()]
@@ -105,11 +109,25 @@ async def get_locality_stats(
     num_houses = len(houses) if houses else 1
     num_plots = len(plots) if plots else 1
     
-    prices = [p.price for p in props if p.price > 0]
-    avg_price = sum(prices) / len(prices) if prices else 12500000.0
-    
-    rates = [p.price / p.area_sqft for p in props if p.area_sqft > 0]
-    avg_rate = sum(rates) / len(rates) if rates else 8500.0
+    # Filter out corrupted outliers from property calculations
+    valid_rates = []
+    valid_prices = []
+    for p in props:
+        if p.area_sqft and p.area_sqft > 0 and p.price and p.price > 0:
+            rate = p.price / p.area_sqft
+            # Filter unrealistic rates (< 2500 or > 50000)
+            if 2500.0 <= rate <= 50000.0:
+                valid_rates.append(rate)
+                valid_prices.append(p.price)
+
+    if valid_rates:
+        # Median/average blended with Google verified benchmark
+        local_avg = sum(valid_rates) / len(valid_rates)
+        avg_rate = round((local_avg * 0.5) + (benchmark_avg_sqft * 0.5), -2)
+        avg_price = sum(valid_prices) / len(valid_prices)
+    else:
+        avg_rate = benchmark_avg_sqft
+        avg_price = round(avg_rate * 1350.0, -4)
     
     avg_rent = round((avg_price * 0.036) / 12, -2)
     
@@ -140,9 +158,16 @@ async def get_locality_stats(
     nearby_places = await GeoapifyService.get_nearby_places(target_lat, target_lon, radius_meters=5000)
     gis_amenities_score = GeoapifyService.calculate_gis_lifestyle_score(nearby_places)
 
+    from app.services.listing_service import ListingService
+    inventory_data = ListingService.get_locality_inventory_breakdown(locality, db)
+
     return {
         "locality": locality.title(),
-        "total_properties": len(props),
+        "total_properties": inventory_data["total_records"],
+        "current_listings_count": inventory_data["current_listings_count"],
+        "historical_records_count": inventory_data["historical_records_count"],
+        "market_references_count": inventory_data["market_references_count"],
+        "availability_message": inventory_data["availability_message"],
         "num_apartments": num_apartments,
         "num_villas": num_villas,
         "num_independent_houses": num_houses,

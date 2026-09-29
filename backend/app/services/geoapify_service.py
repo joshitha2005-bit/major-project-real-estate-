@@ -10,6 +10,7 @@ _SINGULAR_LABEL: Dict[str, str] = {
     "Hospitals":      "Hospital",
     "Metro Stations": "Metro Station",
     "Bus Stops":      "Bus Stop",
+    "Parks":          "Park",
     "Restaurants":    "Restaurant",
     "Shopping Malls": "Shopping Mall",
     "Banks":          "Bank",
@@ -19,50 +20,11 @@ GEOAPIFY_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/search"
 GEOAPIFY_REVERSE_URL = "https://api.geoapify.com/v1/geocode/reverse"
 GEOAPIFY_PLACES_URL = "https://api.geoapify.com/v2/places"
 
-BANGALORE_BENCHMARKS: Dict[str, float] = {
-    "koramangala": 12500.0,
-    "indiranagar": 14000.0,
-    "whitefield": 7800.0,
-    "hsr layout": 9500.0,
-    "hsr": 9500.0,
-    "electronic city": 5600.0,
-    "marathahalli": 7200.0,
-    "jp nagar": 8800.0,
-    "banashankari": 7500.0,
-    "jayanagar": 11500.0,
-    "bellandur": 8200.0,
-    "sarjapur": 6800.0,
-    "hebbal": 9200.0,
-    "yelahanka": 6100.0,
-    "mg road": 16500.0,
-    "malleshwaram": 13000.0,
-    "rajajinagar": 10500.0,
-}
+from app.core.bengaluru_market_rates import get_locality_market_rate, BENGALURU_LOCALITY_RATES
 
 def calculate_price_estimate(location_text: str, lat: float, lon: float) -> tuple[float, str]:
-    text_lower = location_text.lower()
-    matched_base = None
-    
-    for key, price in BANGALORE_BENCHMARKS.items():
-        if key in text_lower:
-            matched_base = price
-            break
-            
-    if not matched_base:
-        center_lat, center_lon = 12.9716, 77.5946
-        dlat = math.radians(lat - center_lat)
-        dlon = math.radians(lon - center_lon)
-        a = math.sin(dlat / 2)**2 + math.cos(math.radians(center_lat)) * math.cos(math.radians(lat)) * math.sin(dlon / 2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        distance_km = 6371 * c
-        matched_base = max(4500.0, 12000.0 - (distance_km * 350.0))
-        
-    min_price = round(matched_base * 0.9, -2)
-    max_price = round(matched_base * 1.15, -2)
-    avg_price = round((min_price + max_price) / 2, -2)
-    
-    price_range_str = f"₹{int(min_price):,} - ₹{int(max_price):,} / sq.ft"
-    return avg_price, price_range_str
+    rate_info = get_locality_market_rate(location_text, lat, lon)
+    return rate_info["avg_sqft"], rate_info["price_range_str"]
 
 class GeoapifyService:
     @staticmethod
@@ -117,54 +79,22 @@ class GeoapifyService:
 
         # --- GRACEFUL FALLBACK ---
         # If API failed, rate limit was reached, or no match was found:
-        text_lower = text.lower()
-        lat, lon = 12.9716, 77.5946  # Default to Bengaluru Center
-        formatted = f"{text.title()}, Bengaluru, Karnataka, India"
-        city = "Bengaluru"
-        state = "Karnataka"
-        country = "India"
-        
-        # Check if query matches any known Bangalore benchmark areas for accurate fallback coordinates
-        benchmark_coords = {
-            "koramangala": (12.9342, 77.6235),
-            "indiranagar": (12.9719, 77.6412),
-            "whitefield": (12.9696, 77.7497),
-            "hsr layout": (12.9116, 77.6388),
-            "hsr": (12.9116, 77.6388),
-            "electronic city": (12.8436, 77.6687),
-            "marathahalli": (12.9569, 77.7011),
-            "jp nagar": (12.9105, 77.5857),
-            "banashankari": (12.9254, 77.5468),
-            "jayanagar": (12.9307, 77.5847),
-            "bellandur": (12.9304, 77.6784),
-            "sarjapur": (12.9252, 77.7274),
-            "hebbal": (13.0354, 77.5988),
-            "yelahanka": (13.1007, 77.5963),
-            "mg road": (12.9740, 77.6010),
-            "malleshwaram": (12.9982, 77.5684),
-            "rajajinagar": (12.9902, 77.5534),
-        }
-        
-        for key, coords in benchmark_coords.items():
-            if key in text_lower:
-                lat, lon = coords
-                formatted = f"{key.title()}, Bengaluru, Karnataka, India"
-                break
-                
-        avg_price, price_range = calculate_price_estimate(formatted, lat, lon)
-        
+        rate_info = get_locality_market_rate(text)
+        lat, lon = rate_info["lat"], rate_info["lon"]
+        formatted = f"{rate_info['locality_name']}, Bengaluru, Karnataka, India" if "bengaluru" not in text.lower() else f"{text.title()}, Karnataka, India"
+
         return {
             "query": text,
             "formatted_address": formatted,
             "latitude": lat,
             "longitude": lon,
-            "city": city,
-            "state": state,
-            "country": country,
+            "city": "Bengaluru",
+            "state": "Karnataka",
+            "country": "India",
             "postcode": "560001",
-            "place_id": "fallback_loc",
-            "estimated_price_sqft": avg_price,
-            "price_range": price_range
+            "place_id": "market_ref_loc",
+            "estimated_price_sqft": rate_info["avg_sqft"],
+            "price_range": rate_info["price_range_str"]
         }
 
     @staticmethod
@@ -296,9 +226,13 @@ class GeoapifyService:
         category_taxonomy_map = {
             "Schools":        ["education.school"],
             "Colleges":       ["education.college", "education.university"],
-            "Hospitals":      ["healthcare.hospital", "healthcare.clinic_or_praxis"],
-            "Metro Stations": ["building.transportation", "public_transport.subway", "public_transport.train"],
+            "Hospitals":      ["healthcare.hospital", "healthcare.clinic"],
+            "Pharmacies":     ["healthcare.pharmacy"],
+            "Police Stations": ["service.police"],
+            "Fire Stations":   ["amenity.fire_station"],
+            "Metro Stations": ["building.transportation", "public_transport.subway", "public_transport.subway_entrance", "public_transport.train"],
             "Bus Stops":      ["public_transport.bus"],
+            "Parks":          ["leisure.park", "landuse.recreation_ground"],
             "Restaurants":    ["catering.restaurant"],
             "Shopping Malls": ["commercial.shopping_mall"],
             "Banks":          ["service.financial.bank", "service.financial.atm"]
