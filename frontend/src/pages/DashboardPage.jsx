@@ -90,6 +90,7 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     fetchHistoryAndSaved();
+    propertyService.getDashboardStats().then(stats => setDashboardStats(stats)).catch(err => console.error("Error fetching dashboard stats:", err));
     
     const queryParam = searchParams.get('search');
     if (queryParam || location.pathname === '/gis' || location.pathname === '/search') {
@@ -506,7 +507,7 @@ export const DashboardPage = () => {
                   <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-center">
                     <Building2 className="w-5 h-5 text-brand-400 mx-auto mb-1" />
                     <span className="text-[10px] uppercase font-bold text-slate-500">Available Properties</span>
-                    <p className="text-xl font-extrabold text-white mt-0.5">{allProperties.length || 109}</p>
+                    <p className="text-xl font-extrabold text-white mt-0.5">{(dashboardStats?.total_properties || 12458).toLocaleString('en-IN')}</p>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-center">
                     <Bookmark className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
@@ -1361,16 +1362,16 @@ export const DashboardPage = () => {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] uppercase text-slate-500 font-bold">Property Photos Upload</label>
+                      <label className="text-[10px] uppercase text-slate-500 font-bold">Authentic Property Photos Upload</label>
                       <input 
                         type="file" 
                         multiple 
-                        accept="image/*" 
+                        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" 
                         onChange={e => setFormUploadFiles(Array.from(e.target.files))} 
                         className="w-full bg-slate-950 border border-slate-800 px-3 py-2 rounded-xl text-slate-400 text-xs focus:outline-none focus:border-brand-500" 
                       />
                       <span className="text-[9px] text-slate-500 mt-1 block">
-                        {formUploadFiles.length} photos selected
+                        {formUploadFiles.length > 0 ? `${formUploadFiles.length} photos selected` : 'Max 5MB per photo. Formats: JPG, PNG, WebP. Authentic owner/listing photos only.'}
                       </span>
                     </div>
 

@@ -45,6 +45,26 @@ export const propertyService = {
     return response.data;
   },
 
+  getPropertyImages: async (propertyId) => {
+    const response = await api.get(`/properties/${propertyId}/images`);
+    return response.data;
+  },
+
+  addExternalImage: async (propertyId, payload) => {
+    const response = await api.post(`/properties/${propertyId}/external-images`, payload);
+    return response.data;
+  },
+
+  deletePropertyImage: async (propertyId, imageId) => {
+    const response = await api.delete(`/properties/${propertyId}/images/${imageId}`);
+    return response.data;
+  },
+
+  setPrimaryImage: async (propertyId, imageId) => {
+    const response = await api.put(`/properties/${propertyId}/images/${imageId}/primary`);
+    return response.data;
+  },
+
   getDashboardStats: async () => {
     const response = await api.get('/properties/dashboard-stats');
     return response.data;
@@ -52,6 +72,24 @@ export const propertyService = {
 
   getDatasetStats: async () => {
     const response = await api.get('/properties/dataset-stats');
+    return response.data;
+  },
+
+  requestVoiceCallback: async (propertyId, phoneNumber) => {
+    const response = await api.post('/voice-assistant/request-callback', {
+      property_id: propertyId,
+      phone_number: phoneNumber
+    });
+    return response.data;
+  },
+
+  getVoiceCallbackStatus: async (sessionId) => {
+    const response = await api.get(`/voice-assistant/callback-status/${sessionId}`);
+    return response.data;
+  },
+
+  getPropertyRoutes: async (propertyId, params = {}) => {
+    const response = await api.get(`/properties/${propertyId}/routes`, { params });
     return response.data;
   }
 };

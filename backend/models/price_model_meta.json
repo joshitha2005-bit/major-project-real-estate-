@@ -1,10 +1,20 @@
 {
+  "model_version": "1.0.0-xgboost-bengaluru",
+  "training_datetime": "2026-09-12T06:37:16.738842+00:00",
   "dataset_name": "Bengaluru_House_Data.csv",
+  "dataset_path": "C:\\real estate\\backend\\datasets\\banglore_housing_data\\Bengaluru_House_Data.csv",
   "original_rows": 13320,
-  "cleaned_rows": 9889,
+  "cleaned_rows": 11561,
+  "dropped_breakdown": {
+    "duplicates": 529,
+    "invalid_or_missing_sqft": 4,
+    "invalid_or_missing_price": 0,
+    "bhk_sqft_ratio_outliers": 605,
+    "price_sqft_locality_iqr_outliers": 621
+  },
   "unique_locations": 251,
-  "train_rows": 7911,
-  "test_rows": 1978,
+  "train_rows": 9248,
+  "test_rows": 2313,
   "features": [
     "location",
     "area_type",
@@ -14,10 +24,11 @@
     "balcony"
   ],
   "metrics": {
-    "mae_inr": 2014028.8558518705,
-    "mae_lakhs": 20.14,
-    "rmse_inr": 5325674.960984134,
-    "rmse_lakhs": 53.26,
-    "r2": 0.7226
+    "mae_inr": 2326926.3947254648,
+    "mae_lakhs": 23.27,
+    "rmse_inr": 4800515.459939807,
+    "rmse_lakhs": 48.01,
+    "r2": 0.7843,
+    "mape": 25.18
   }
 }

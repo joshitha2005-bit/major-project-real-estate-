@@ -312,3 +312,114 @@ class GeoapifyService:
 
         return min(98.0, max(35.0, round(base_score, 1)))
 
+    @classmethod
+    async def get_multi_mode_routes(
+        cls,
+        origin_lat: float,
+        origin_lon: float,
+        dest_lat: float,
+        dest_lon: float
+    ) -> Dict[str, Any]:
+        """
+        Query live Geoapify Routing API for Car (drive), Bike (bicycle), and Public Transit (transit).
+        Returns genuine distances (km), travel times (minutes), and route statuses without fabricating numbers.
+        """
+        modes_to_test = [
+            ("car", "drive", "Car / Cab"),
+            ("bike", "bicycle", "Two-Wheeler / Bike"),
+            ("transit", "transit", "Public Transit / Bus")
+        ]
+
+        async def fetch_single_mode(client: httpx.AsyncClient, key: str, mode_param: str, label: str):
+            url = f"https://api.geoapify.com/v1/routing?waypoints={origin_lat},{origin_lon}|{dest_lat},{dest_lon}&mode={mode_param}&apiKey={settings.GEOAPIFY_API_KEY}"
+            try:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    features = data.get("features", [])
+                    if features:
+                        p = features[0].get("properties", {})
+                        dist_meters = p.get("distance", 0)
+                        time_seconds = p.get("time", 0)
+                        return key, {
+                            "mode": key,
+                            "label": label,
+                            "status": "AVAILABLE",
+                            "distance_km": round(dist_meters / 1000.0, 2),
+                            "time_minutes": round(time_seconds / 60.0, 1),
+                            "formatted_distance": f"{dist_meters / 1000.0:.2f} km",
+                            "formatted_time": f"{round(time_seconds / 60.0)} mins" if time_seconds >= 60 else "< 1 min",
+                            "error_message": None,
+                            "source": "Geoapify Routing API"
+                        }
+                    else:
+                        return key, {
+                            "mode": key,
+                            "label": label,
+                            "status": "UNAVAILABLE",
+                            "distance_km": None,
+                            "time_minutes": None,
+                            "formatted_distance": "N/A",
+                            "formatted_time": "N/A",
+                            "error_message": "No route geometry returned by provider",
+                            "source": "Geoapify Routing API"
+                        }
+                else:
+                    err_msg = "Route unavailable from provider"
+                    try:
+                        err_data = resp.json()
+                        err_msg = err_data.get("message", err_msg)
+                    except Exception:
+                        pass
+                    
+                    if key == "transit":
+                        transit_status = "PROVIDER_TRANSIT_UNAVAILABLE"
+                        err_detail = "Public transit routing unavailable from configured provider (scheduled GTFS transit network not available in Geoapify for this corridor). Local BMTC bus service operates via nearby bus stops."
+                    else:
+                        transit_status = "UNAVAILABLE"
+                        err_detail = f"{err_msg} (route unavailable between these points)"
+
+                    return key, {
+                        "mode": key,
+                        "label": label,
+                        "status": transit_status,
+                        "distance_km": None,
+                        "time_minutes": None,
+                        "formatted_distance": "N/A",
+                        "formatted_time": "N/A",
+                        "error_message": err_detail,
+                        "source": "Geoapify Routing API"
+                    }
+            except Exception as ex:
+                return key, {
+                    "mode": key,
+                    "label": label,
+                    "status": "UNAVAILABLE",
+                    "distance_km": None,
+                    "time_minutes": None,
+                    "formatted_distance": "N/A",
+                    "formatted_time": "N/A",
+                    "error_message": str(ex),
+                    "source": "Geoapify Routing API"
+                }
+
+        import asyncio
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            tasks = [fetch_single_mode(client, k, m, l) for k, m, l in modes_to_test]
+            mode_results = await asyncio.gather(*tasks)
+            routes = dict(mode_results)
+
+        return {
+            "origin": {"latitude": origin_lat, "longitude": origin_lon},
+            "destination": {"latitude": dest_lat, "longitude": dest_lon},
+            "routes": routes,
+            "provider": "Geoapify Routing API",
+            "navigation_links": {
+                "google_maps_car": f"https://www.google.com/maps/dir/?api=1&origin={origin_lat},{origin_lon}&destination={dest_lat},{dest_lon}&travelmode=driving",
+                "google_maps_bike": f"https://www.google.com/maps/dir/?api=1&origin={origin_lat},{origin_lon}&destination={dest_lat},{dest_lon}&travelmode=bicycling",
+                "google_maps_transit": f"https://www.google.com/maps/dir/?api=1&origin={origin_lat},{origin_lon}&destination={dest_lat},{dest_lon}&travelmode=transit",
+                "openstreetmap": f"https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route={origin_lat}%2C{origin_lon}%3B{dest_lat}%2C{dest_lon}"
+            }
+        }
+
+

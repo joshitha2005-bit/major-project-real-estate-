@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  GraduationCap, Hospital, Train, Utensils, 
-  ShoppingBag, Landmark, Trees, Bus, MapPin, Filter, AlertTriangle 
+import {
+  GraduationCap, Hospital, Train, Utensils,
+  ShoppingBag, Landmark, Trees, Bus, MapPin, Filter, AlertTriangle
 } from 'lucide-react';
 
 const CATEGORY_MAP = {
-  "All":            { icon: Filter,         color: "text-slate-300",  bg: "bg-slate-800" },
-  "Schools":        { icon: GraduationCap,  color: "text-blue-400",   bg: "bg-blue-500/10 border-blue-500/20" },
-  "Colleges":       { icon: GraduationCap,  color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
-  "Hospitals":      { icon: Hospital,       color: "text-red-400",    bg: "bg-red-500/10 border-red-500/20" },
-  "Metro Stations": { icon: Train,          color: "text-amber-400",  bg: "bg-amber-500/10 border-amber-500/20" },
-  "Bus Stops":      { icon: Bus,            color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
-  "Restaurants":    { icon: Utensils,       color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
-  "Shopping Malls": { icon: ShoppingBag,    color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-  "Banks":          { icon: Landmark,       color: "text-emerald-400",bg: "bg-emerald-500/10 border-emerald-500/20" },
+  "All": { icon: Filter, color: "text-slate-300", bg: "bg-slate-800" },
+  "Schools": { icon: GraduationCap, color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  "Colleges": { icon: GraduationCap, color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
+  "Hospitals": { icon: Hospital, color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+  "Metro Stations": { icon: Train, color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  "Bus Stops": { icon: Bus, color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20" },
+  "Restaurants": { icon: Utensils, color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
+  "Shopping Malls": { icon: ShoppingBag, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+  "Banks": { icon: Landmark, color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
 };
 
 const CATEGORIES_LIST = [
@@ -29,13 +29,13 @@ const GENERIC_NAMES = new Set([
 function isGenericName(name) {
   const lower = (name || '').toLowerCase().trim();
   if (lower.length < 3) return true;
-  
+
   const genericTerms = [
-    'point of interest', 'unnamed', 'unknown', 'building', 'structure', 
+    'point of interest', 'unnamed', 'unknown', 'building', 'structure',
     'place', 'area', 'zone', 'road'
   ];
   if (genericTerms.some(term => lower.includes(term))) return true;
-  
+
   if (/^[0-9]+$/.test(lower)) return true;
   return false;
 }
@@ -83,17 +83,17 @@ export const NearbyPlacesList = ({
           {onRadiusChange && (
             <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
               {[
-                { label: '1 KM',  value: 1000 },
-                { label: '5 KM',  value: 5000 },
+                { label: '500 M', value: 500 },
+                { label: '1 KM', value: 1000 },
+                { label: '5 KM', value: 5000 },
               ].map(({ label, value }) => (
                 <button
                   key={value}
                   onClick={() => onRadiusChange(value)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
-                    radius === value
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${radius === value
                       ? 'bg-brand-500 text-white shadow shadow-brand-500/30'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   {label}
                 </button>
@@ -109,9 +109,9 @@ export const NearbyPlacesList = ({
 
       {/* Coordinate status disclaimer badge */}
       {coordinateStatus === "LOCALITY_APPROXIMATE" && (
-        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-center gap-2 font-medium">
-          <MapPin className="w-4 h-4 text-amber-400 flex-shrink-0" />
-          <span>Amenities calculated around approximate locality</span>
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-center gap-2 font-bold tracking-wide">
+          <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <span>LOCATION APPROXIMATE | DISTANCES ARE INDICATIVE</span>
         </div>
       )}
 
@@ -145,18 +145,16 @@ export const NearbyPlacesList = ({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
-                isActive
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${isActive
                   ? 'bg-brand-500 text-white border-brand-400 shadow-md shadow-brand-500/25'
                   : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
-              }`}
+                }`}
             >
               <Icon className="w-3.5 h-3.5" />
               {cat}
               {count > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
-                }`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
+                  }`}>
                   {count}
                 </span>
               )}

@@ -1,4 +1,4 @@
-from sqlalchemy import or_
+from sqlalchemy import or_, case, desc, asc
 import os
 import uuid
 import random
@@ -73,10 +73,45 @@ LOCALITY_COORDINATES = {
     "hennur": (13.0258, 77.6341),
     "vijayanagar": (12.9708, 77.5350),
     "rajajinagar": (12.9882, 77.5549),
+    "rajaji nagar": (12.9882, 77.5549),
     "malleshwaram": (13.0031, 77.5643),
+    "malleswaram": (13.0031, 77.5643),
+    "devanahalli": (13.2485, 77.7126),
     "basavanagudi": (12.9421, 77.5752),
     "brookefield": (12.9658, 77.7183),
-    "chandapura": (12.8004, 77.7063)
+    "chandapura": (12.8004, 77.7063),
+    "kanakapura road": (12.8760, 77.5480),
+    "kanakpura road": (12.8760, 77.5480),
+    "rajarajeshwari nagar": (12.9150, 77.5180),
+    "raja rajeshwari nagar": (12.9150, 77.5180),
+    "rr nagar": (12.9150, 77.5180),
+    "uttarahalli": (12.9056, 77.5350),
+    "hoodi": (12.9934, 77.7174),
+    "bommasandra": (12.8122, 77.6835),
+    "kengeri": (12.9081, 77.4837),
+    "haralur road": (12.9090, 77.6695),
+    "haralur": (12.9090, 77.6695),
+    "kasavanahalli": (12.9090, 77.6695),
+    "kasavanhalli": (12.9090, 77.6695),
+    "kothanur": (13.0560, 77.6520),
+    "horamavu": (13.0270, 77.6620),
+    "hormavu": (13.0270, 77.6620),
+    "varthur": (12.9406, 77.7466),
+    "begur road": (12.8824, 77.6253),
+    "begur": (12.8824, 77.6253),
+    "jakkur": (13.0783, 77.6065),
+    "jigani": (12.7845, 77.6405),
+    "attibele": (12.7783, 77.7712),
+    "yeshwanthpur": (13.0238, 77.5529),
+    "budigere": (13.0800, 77.7400),
+    "panathur": (12.9350, 77.7020),
+    "vidyaranyapura": (13.0827, 77.5583),
+    "balagere": (12.9380, 77.7280),
+    "kaggadasapura": (12.9830, 77.6810),
+    "ramamurthy nagar": (13.0163, 77.6785),
+    "akshaya nagar": (12.8730, 77.6180),
+    "hulimavu": (12.8765, 77.6015),
+    "chikka tirupathi": (12.8980, 77.8650)
 }
 
 
@@ -131,102 +166,140 @@ def enrich_property_out(p: Property) -> PropertyOut:
             coord_quality = "MISSING"
         else:
             coord_quality = "EXACT"
-    coord_status = coord_quality
+    if coord_quality == "APPROXIMATE":
+        coord_status = "LOCALITY_APPROXIMATE"
+    else:
+        coord_status = coord_quality
 
     # Determine property type source
     is_historical = (p.source_type == "historical_dataset" or p.source == "Bengaluru_House_Data.csv")
     ptype_src = "inferred" if is_historical else "user_provided"
     
-    # Determine title, building & society normalization according to real-world priority rules
+    # Canonical Property Identity & Location Resolution
+    db_identity_conf = getattr(p, "identity_confidence", None)
+    db_building_name = getattr(p, "building_name", None)
+    db_project_name = getattr(p, "project_name", None)
+    db_society_name = getattr(p, "society_name", None)
+    db_builder_name = getattr(p, "builder_name", None)
+    
+    # Priority 1: Check database canonical identity
     raw_title = (p.title or "").strip()
     raw_society = (getattr(p, "society", None) or "").strip()
-    loc_str = extract_location(p)
     
     building_name = None
     project_name = None
     society_name = None
+    builder_name = db_builder_name
     
-    # Priority 1: Check genuine society name (must not be an anonymized Kaggle hash code)
-    if raw_society and raw_society.lower() not in ["none", "null", "nan", ""]:
-        if not is_anonymized_code(raw_society):
-            society_name = raw_society
-            building_name = raw_society
-            project_name = raw_society
-    
-    KNOWN_BUILDERS = [
-        "prestige", "sobha", "salarpuria", "brigade", "godrej", "assetz", 
-        "puravankara", "l&t", "embassy", "shriram", "mantri", "dharani", 
-        "signature", "century", "provident", "casagrand", "sukhi", "elgin", 
-        "scion", "dra", "mahindra", "vgn", "kg"
-    ]
-    title_has_builder = any(b in raw_title.lower() for b in KNOWN_BUILDERS)
-    
-    if not building_name:
-        if title_has_builder or (not is_historical and not is_anonymized_code(raw_title) and not raw_title.lower().startswith("property in")):
-            building_name = raw_title
-            if not project_name:
-                project_name = raw_title
+    INVALID_BUILDINGS = {
+        'sb', 'apartment', 'apartments', 'aparment', 'stand alone building',
+        'standlone building', 'standalone building', 'villa', 'plot', 'land',
+        'residential apartment', 'independent house', 'house', 'biotech park'
+    }
+    is_valid_db_bldg = (
+        db_building_name and 
+        db_building_name.lower().strip() not in INVALID_BUILDINGS and
+        ' village' not in db_building_name.lower() and
+        db_building_name.lower().strip() != (p.locality or "").lower().strip()
+    )
 
-    # Honest property type fallback (preserves Bedroom for 5+ BHK as tested in test suite)
-    if "bedroom" in raw_title.lower() or (p.bhk and p.bhk > 4):
-        size_str = f"{p.bhk} Bedroom"
-    elif p.bhk and p.bhk > 0:
-        size_str = f"{p.bhk} BHK"
+    if db_identity_conf == "IDENTITY_RESOLVED" and is_valid_db_bldg:
+        building_name = db_building_name
+        project_name = db_project_name or db_building_name
+        society_name = db_society_name or db_building_name
+        identity_conf = "IDENTITY_RESOLVED"
+    elif raw_society and not is_anonymized_code(raw_society) and raw_society.lower() not in ["none", "null", "nan", ""]:
+        building_name = raw_society
+        project_name = raw_society
+        society_name = raw_society
+        identity_conf = "IDENTITY_RESOLVED"
+    elif db_identity_conf in ["IDENTITY_PARTIAL", "IDENTITY_UNRESOLVED"]:
+        identity_conf = db_identity_conf
+        building_name = None
+        project_name = None
+        society_name = None
     else:
-        size_str = "Property"
+        # Check title if direct listing or legitimate project
+        KNOWN_BUILDERS = [
+            "prestige", "sobha", "salarpuria", "brigade", "godrej", "assetz", 
+            "puravankara", "l&t", "embassy", "shriram", "mantri", "dharani", 
+            "signature", "century", "provident", "casagrand", "sukhi", "elgin", 
+            "scion", "dra", "mahindra", "vgn", "kg"
+        ]
+        title_has_builder = any(b in raw_title.lower() for b in KNOWN_BUILDERS)
+        if title_has_builder:
+            building_name = raw_title
+            project_name = raw_title
+            society_name = raw_title
+            identity_conf = "IDENTITY_RESOLVED"
+        elif getattr(p, "sub_locality", None):
+            identity_conf = "IDENTITY_PARTIAL"
+        else:
+            identity_conf = "IDENTITY_UNRESOLVED"
+
+    # Display title distinction: NEVER confuse property type with property name!
+    if identity_conf == "IDENTITY_RESOLVED" and building_name:
+        display_title = building_name
+    else:
+        if "bedroom" in raw_title.lower() or (p.bhk and p.bhk > 4):
+            size_str = f"{p.bhk} Bedroom"
+        elif p.bhk and p.bhk > 0:
+            size_str = f"{p.bhk} BHK"
+        else:
+            size_str = ""
+
+        loc_part = p.locality or "Bengaluru"
+        if size_str:
+            display_title = f"{size_str} in {loc_part}"
+        else:
+            display_title = f"Property in {loc_part}"
         
-    fallback_title = f"{size_str} in {loc_str}"
-    
-    display_title = building_name if building_name else fallback_title
     property_type_val = p.property_type
 
     # Canonical Location Resolution
     addr = (p.address or "").strip()
-    pincode_match = re.search(r'\b(560\d{3})\b', addr)
-    pincode_val = pincode_match.group(1) if pincode_match else None
-    
-    clean_addr = re.sub(r'-\s*560\d{3}\b', '', addr)
-    clean_addr = re.sub(r'\b(bengaluru|bangalore|karnataka|india)\b', '', clean_addr, flags=re.I).strip(' ,')
-    
-    addr_parts = [pt.strip() for pt in clean_addr.split(',') if pt.strip()]
-    street_val = None
-    road_val = None
+    pincode_val = getattr(p, "pincode", None)
+    if not pincode_val:
+        pincode_match = re.search(r'\b(560\d{3}|561\d{3}|562\d{3})\b', addr)
+        pincode_val = pincode_match.group(1) if pincode_match else None
+        
+    street_val = getattr(p, "street", None)
+    road_val = getattr(p, "road", None)
     sub_loc_val = getattr(p, "sub_locality", None)
-    
-    for part in addr_parts:
-        if re.search(r'\b(road|rd|street|st|cross|main|avenue|highway)\b', part, re.I):
-            road_val = part
-        elif re.search(r'\b(block|sector|phase|stage|layout)\b', part, re.I):
-            if not sub_loc_val:
-                sub_loc_val = part
-            else:
-                street_val = part
-        elif not street_val and part.lower() != (p.locality or "").lower():
-            street_val = part
-
     loc_val = (p.locality or "Bengaluru").title()
-    is_exact = (coord_quality == "EXACT")
-    coord_confidence = "EXACT" if is_exact else "APPROXIMATE"
-    loc_source = "SOURCE_EXACT_COORDINATES" if is_exact else "LOCALITY_BENCHMARK_CENTROID"
+    
+    # Coordinate confidence
+    coord_conf_db = getattr(p, "coordinate_confidence", None)
+    if coord_conf_db in ["EXACT", "APPROXIMATE"]:
+        coord_confidence = coord_conf_db
+    else:
+        coord_confidence = "EXACT" if coord_quality == "EXACT" else "APPROXIMATE"
+        
+    is_direct = (getattr(p, "source_type", "") in ["PROPPULSE_DIRECT", "owner_listing"])
+    loc_source = getattr(p, "location_source", None) or ("VERIFIED_BUILDING_GPS" if coord_confidence == "EXACT" else "LOCALITY_BENCHMARK_CENTROID")
+    identity_src = getattr(p, "identity_source", None) or ("VERIFIED_DIRECT" if is_direct else "HISTORICAL_RECORD")
     
     # Formatted address assembly
-    addr_segments = []
-    if building_name:
-        addr_segments.append(building_name)
-    if street_val or road_val:
-        addr_segments.append(street_val or road_val)
-    if sub_loc_val and sub_loc_val.lower() not in loc_val.lower():
-        addr_segments.append(sub_loc_val)
-    addr_segments.append(loc_val)
-    addr_segments.append("Bengaluru, Karnataka" + (f" - {pincode_val}" if pincode_val else ""))
-    
-    formatted_address = ", ".join(addr_segments)
+    formatted_address = getattr(p, "formatted_address", None)
+    if not formatted_address:
+        addr_segments = []
+        if building_name:
+            addr_segments.append(building_name)
+        if street_val or road_val:
+            addr_segments.append(street_val or road_val)
+        if sub_loc_val and sub_loc_val.lower() not in loc_val.lower():
+            addr_segments.append(sub_loc_val)
+        addr_segments.append(loc_val)
+        addr_segments.append("Bengaluru, Karnataka" + (f" - {pincode_val}" if pincode_val else ""))
+        formatted_address = ", ".join(addr_segments)
     
     canonical_location = CanonicalLocation(
         property_id=p.id,
-        building_name=building_name,
-        project_name=project_name,
-        society_name=society_name,
+        property_name=building_name if identity_conf == "IDENTITY_RESOLVED" else None,
+        building_name=building_name if identity_conf == "IDENTITY_RESOLVED" else None,
+        project_name=project_name if identity_conf == "IDENTITY_RESOLVED" else None,
+        society_name=society_name if identity_conf == "IDENTITY_RESOLVED" else None,
+        builder_name=builder_name,
         street=street_val,
         road=road_val,
         sub_locality=sub_loc_val,
@@ -238,6 +311,8 @@ def enrich_property_out(p: Property) -> PropertyOut:
         longitude=p.longitude,
         coordinate_confidence=coord_confidence,
         formatted_address=formatted_address,
+        identity_confidence=identity_conf,
+        identity_source=identity_src,
         location_source=loc_source
     )
 
@@ -255,8 +330,11 @@ def enrich_property_out(p: Property) -> PropertyOut:
     # Phase B Source & Provenance attributes
     from app.services.image_provenance import ImageProvenanceService
     from app.services.listing_service import ListingService
+    from app.services.contact_verification_service import ContactVerificationService
 
     img_info = ImageProvenanceService.get_property_image_provenance(p)
+    gallery_info = ImageProvenanceService.resolve_property_gallery(p)
+    contact_info = ContactVerificationService.resolve_property_contact(p)
     anomalies = ListingService.clean_and_audit_property(p)
 
     stype = p.source_type
@@ -280,21 +358,11 @@ def enrich_property_out(p: Property) -> PropertyOut:
             lstatus = "UNKNOWN"
 
     is_direct = (stype == "PROPPULSE_DIRECT" or p.source_type == "owner_listing")
-    
-    if p.owner_phone and p.owner_phone.strip() and p.owner_phone not in SEED_PHONES and p.owner_phone != "Contact information unavailable":
-        phone_val = p.owner_phone
-    elif p.phone and p.phone.strip() and p.phone not in SEED_PHONES and p.phone != "Contact information unavailable":
-        phone_val = p.phone
-    else:
-        phone_val = "Contact information unavailable"
-
-    contact_avail = is_direct or bool(p.owner_phone and p.owner_phone not in SEED_PHONES and p.owner_phone != "Contact information unavailable")
-    contact_src = "Owner Provided" if contact_avail else "Historical Dataset - No Contact"
 
     out_dict = {
         "id": p.id,
         "user_id": p.user_id,
-        "source_listing_id": getattr(p, "source_listing_id", f"BLR-{p.id}"),
+        "source_listing_id": contact_info["source_listing_id"],
         "city": getattr(p, "city", "Bengaluru"),
         "title": display_title,
         "display_title": display_title,
@@ -325,28 +393,28 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "zone": getattr(p, "zone", None),
         "latitude": p.latitude,
         "longitude": p.longitude,
-        "owner_name": p.owner_name if is_direct else "Historical Dataset",
-        "owner_phone": phone_val if contact_avail else "Contact information unavailable",
+        "owner_name": "Historical Dataset" if is_historical else (p.owner_name or "Property Owner" if is_direct else "Verified Contact"),
+        "seller_name": "Historical Dataset" if is_historical else (p.owner_name or "Property Owner" if is_direct else "Verified Contact"),
+        "owner_phone": contact_info["contact_number"] if contact_info["contact_display_permission"] else "Contact information unavailable",
+        "phone": contact_info["contact_number"] if contact_info["contact_display_permission"] else "Contact information unavailable",
         "images": img_info["images"],
         "image_provenance": img_info["image_provenance"],
         "image_provenance_badge": img_info["provenance_badge"],
         "image_disclosure_note": img_info["disclosure_note"],
         "has_genuine_image": img_info["has_genuine_image"],
-        "contact_available": contact_avail,
-        "contact_source": contact_src,
+        "contact_available": contact_info["contact_display_permission"],
+        "contact_source": contact_info["contact_source"],
         "anomaly_flags": anomalies,
         "nearby_places": p.nearby_places or [],
         "street_view_available": bool(p.street_view_available),
-        "seller_type": p.seller_type or "Owner",
-        "seller_name": p.seller_name if is_direct else "Historical Dataset",
-        "phone": phone_val if contact_avail else "Contact information unavailable",
+        "seller_type": contact_info["contact_type"],
         "verification_status": p.verification_status or "Verified",
         "source_type": p.source_type or "demo_dataset",
         "provenance_type": stype,
         "source_name": getattr(p, "source_name", p.source or "Bengaluru_House_Data.csv"),
         "listing_status": lstatus,
-        "source": p.source or "PropPulse Direct",
-        "source_url": p.source_url or "",
+        "source": contact_info["source_platform"],
+        "source_url": contact_info["source_listing_url"] or p.source_url or "",
         "image_source": p.image_source or "",
         "verified": bool(p.verified),
         "price_per_sqft": price_sqft,
@@ -355,9 +423,56 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "coordinate_status": coord_status,
         "property_type_source": ptype_src,
         "society": society_name or building_name,
+        "property_name": building_name if identity_conf == "IDENTITY_RESOLVED" else None,
+        "building_name": building_name if identity_conf == "IDENTITY_RESOLVED" else None,
+        "project_name": project_name if identity_conf == "IDENTITY_RESOLVED" else None,
+        "society_name": society_name if identity_conf == "IDENTITY_RESOLVED" else None,
+        "builder_name": builder_name,
+        "street": street_val,
+        "road": road_val,
+        "state": getattr(p, "state", "Karnataka") or "Karnataka",
+        "pincode": pincode_val,
+        "coordinate_confidence": coord_confidence,
+        "formatted_address": formatted_address,
+        "identity_confidence": identity_conf,
+        "identity_source": identity_src,
+        "location_source": loc_source,
+        "display_title": display_title,
+        "canonical_location": canonical_location,
         "uploaded_images": p.property_images or [],
         "created_at": p.created_at,
-        "last_verified_at": getattr(p, "last_verified_at", None)
+        "last_verified_at": getattr(p, "last_verified_at", None),
+
+        # Objective 20B fields
+        "image_status": img_info.get("image_classification", "NO_IMAGE"),
+        "image_source_url": img_info.get("primary_image", "") or "",
+        "image_authorization_status": img_info.get("image_classification", "NO_IMAGE"),
+        "cnn_analysis_status": "ACTIVE" if img_info.get("usable_for_ai") else ("READY_NO_PERMISSION" if img_info.get("image_classification") == "SOURCE_LISTING_IMAGE" else "UNAVAILABLE"),
+        "cnn_embedding_dimensions": 512 if img_info.get("usable_for_ai") else None,
+        "contact_type": contact_info["contact_type"],
+        "contact_number": contact_info["contact_number"],
+        "contact_source_url": contact_info["contact_source_url"],
+        "contact_verified_at": contact_info["contact_verified_at"],
+        "contact_display_permission": contact_info["contact_display_permission"],
+        "source_platform": contact_info["source_platform"],
+        "source_listing_url": contact_info["source_listing_url"],
+        "gallery": gallery_info,
+        "location_provenance": {
+            "latitude": p.latitude,
+            "longitude": p.longitude,
+            "accuracy_status": coord_confidence,
+            "source": loc_source,
+            "formatted_address": formatted_address
+        },
+        "contact_provenance": {
+            "number": contact_info["contact_number"] if contact_info["contact_display_permission"] else None,
+            "provenance": "OWNER_PROVIDED" if contact_info["contact_type"] == "Owner" else ("PUBLIC_BUILDER_OFFICE" if contact_info["contact_type"] == "Builder" else "UNAVAILABLE"),
+            "publicly_available": bool(contact_info["contact_display_permission"]),
+            "display_message": contact_info.get("display_message") or ("Contact number not publicly available" if not contact_info["contact_display_permission"] else "Publicly available contact"),
+            "click_to_call": f"tel:{contact_info['contact_number']}" if (contact_info["contact_display_permission"] and contact_info["contact_number"]) else None,
+            "contact_type": contact_info["contact_type"],
+            "office_address": contact_info.get("office_address")
+        }
     }
     return PropertyOut(**out_dict)
 
@@ -637,7 +752,23 @@ def list_properties(
         skip = (page - 1) * page_size
         limit = page_size
         
-    properties = q.order_by(Property.created_at.desc()).offset(skip).limit(limit).all()
+    properties = q.order_by(
+        case(
+            (Property.identity_confidence == 'IDENTITY_RESOLVED', 1),
+            (Property.identity_confidence == 'IDENTITY_PARTIAL', 2),
+            else_=3
+        ),
+        case(
+            (Property.coordinate_confidence == 'EXACT', 1),
+            else_=2
+        ),
+        case(
+            (Property.listing_status == 'CURRENT', 1),
+            else_=2
+        ),
+        Property.created_at.desc(),
+        Property.id.asc()
+    ).offset(skip).limit(limit).all()
     enriched_items = [enrich_property_out(p) for p in properties]
     return PropertyListOut(items=enriched_items, total=total, page=page, page_size=page_size)
 
@@ -703,6 +834,62 @@ async def get_property_by_id(
             db.refresh(prop)
 
     return enrich_property_out(prop)
+
+@router.get("/{id}/routes")
+async def get_property_navigation_routes(
+    id: int,
+    origin_lat: Optional[float] = Query(None, ge=-90.0, le=90.0, description="Origin user latitude"),
+    origin_lon: Optional[float] = Query(None, ge=-180.0, le=180.0, description="Origin user longitude"),
+    origin_text: Optional[str] = Query(None, description="Origin address string e.g. 'Majestic, Bengaluru'"),
+    db: Session = Depends(get_db)
+):
+    """
+    Compute real multi-modal navigation routes (Car, Bike, Public Transit) to this property.
+    Uses property's actual destination coordinates.
+    Origin is resolved from user GPS coordinates or user-entered location string.
+    """
+    prop = db.query(Property).filter(Property.id == id).first()
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    dest_lat = prop.latitude
+    dest_lon = prop.longitude
+    resolved_origin_address = None
+
+    if origin_lat is not None and origin_lon is not None:
+        o_lat, o_lon = float(origin_lat), float(origin_lon)
+    elif origin_text and origin_text.strip():
+        geo_res = await GeoapifyService.search_geocode(origin_text.strip())
+        if not geo_res:
+            raise HTTPException(status_code=400, detail=f"Could not geocode origin location: '{origin_text}'")
+        o_lat, o_lon = geo_res["latitude"], geo_res["longitude"]
+        resolved_origin_address = geo_res.get("formatted_address")
+    else:
+        raise HTTPException(
+            status_code=400, 
+            detail="Must provide either (origin_lat, origin_lon) coordinates or origin_text location string."
+        )
+
+    routes_data = await GeoapifyService.get_multi_mode_routes(
+        origin_lat=o_lat,
+        origin_lon=o_lon,
+        dest_lat=dest_lat,
+        dest_lon=dest_lon
+    )
+    routes_data["property_id"] = prop.id
+    routes_data["property_title"] = prop.title
+    routes_data["property_address"] = prop.address
+    routes_data["destination"]["address"] = prop.address
+    routes_data["destination"]["coordinates"] = f"{dest_lat:.6f}, {dest_lon:.6f}"
+    if resolved_origin_address:
+        routes_data["origin"]["address"] = resolved_origin_address
+        routes_data["origin"]["source"] = "Searched Location (Geocoded via Geoapify)"
+    else:
+        routes_data["origin"]["address"] = f"Current Location GPS ({o_lat:.6f}, {o_lon:.6f})"
+        routes_data["origin"]["source"] = "Browser Geolocation (GPS)"
+    routes_data["origin"]["coordinates"] = f"{o_lat:.6f}, {o_lon:.6f}"
+
+    return routes_data
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_property(
@@ -1062,16 +1249,28 @@ def get_property_contact_details(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Secure workflow exposing owner contact information only to authenticated sessions."""
+    """Secure workflow exposing owner contact information only when legitimately permitted."""
     prop = db.query(Property).filter(Property.id == id).first()
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
-        
+
+    from app.services.contact_verification_service import ContactVerificationService
+    contact_info = ContactVerificationService.resolve_property_contact(prop)
+
     return {
-        "owner_name": prop.owner_name or "PropPulse Verified Owner",
-        "owner_phone": prop.owner_phone or "+91 98860 12345",
-        "seller_name": prop.seller_name or "PropPulse Verified Seller",
-        "phone": prop.phone or "+91 98860 12345"
+        "owner_name": prop.owner_name or "Verified Contact",
+        "seller_name": prop.seller_name or "Verified Seller",
+        "contact_type": contact_info["contact_type"],
+        "contact_number": contact_info["contact_number"],
+        "phone": contact_info["contact_number"],
+        "owner_phone": contact_info["contact_number"],
+        "contact_source": contact_info["contact_source"],
+        "contact_source_url": contact_info["contact_source_url"],
+        "contact_display_permission": contact_info["contact_display_permission"],
+        "source_platform": contact_info["source_platform"],
+        "source_listing_id": contact_info["source_listing_id"],
+        "source_listing_url": contact_info["source_listing_url"],
+        "display_message": contact_info["display_message"]
     }
 
 @router.get("/dashboard-stats")

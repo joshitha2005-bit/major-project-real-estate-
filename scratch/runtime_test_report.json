@@ -1,0 +1,324 @@
+[
+  {
+    "property": {
+      "id": 101,
+      "real_name": "PropPulse Direct Test Apartment",
+      "display_title": "PropPulse Direct Test Apartment",
+      "full_address": "Koramangala 3rd Block, Srinivagilu Main Road",
+      "locality": "Koramangala",
+      "bhk": 3,
+      "area_sqft": 1500.0,
+      "price_formatted": "\u20b91.85 Cr",
+      "source": "Historical Dataset",
+      "source_type": "owner_listing",
+      "source_listing_id": "BLR-LIST-101",
+      "source_url": "N/A"
+    },
+    "image": {
+      "image_provenance": "OWNER_UPLOADED",
+      "provenance_badge": "OWNER_UPLOADED",
+      "has_genuine_image": true,
+      "images_analyzed_by_resnet18": 6,
+      "cnn_embedding_dim": 512,
+      "cnn_embedding_sample": [
+        0.0,
+        0.0,
+        0.03680000081658363,
+        0.5636000037193298
+      ],
+      "cnn_status": "ACTIVE"
+    },
+    "text": {
+      "description_available": true,
+      "tfidf_dimensions": 16,
+      "extracted_terms": []
+    },
+    "geo": {
+      "coordinates": "12.9442321, 77.6207414",
+      "coordinate_quality": "EXACT",
+      "geoapify_nearby_count": 48
+    },
+    "model": {
+      "fused_dimensions": 544,
+      "xgboost_prediction": 21681608.0,
+      "predicted_price_formatted": "\u20b9216.82 Lakhs"
+    },
+    "shap": {
+      "shap_available": true,
+      "top_positive": [
+        {
+          "feature": "struct_locality_encoded",
+          "factor": "Locality / Regional Demand",
+          "description": "Bengaluru micro-market price benchmark",
+          "impact_inr": 2356366.0,
+          "impact_lakhs": 23.56,
+          "impact_amount": "+\u20b923.56 Lakhs"
+        },
+        {
+          "feature": "resnet18_feat_0",
+          "factor": "Visual Aesthetics (ResNet-18)",
+          "description": "CNN visual features from property imagery",
+          "impact_inr": 2017972.62,
+          "impact_lakhs": 20.18,
+          "impact_amount": "+\u20b920.18 Lakhs"
+        },
+        {
+          "feature": "geo_total_count",
+          "factor": "Total Civic POI Density",
+          "description": "Aggregate civic amenity density within 5km",
+          "impact_inr": 564262.0,
+          "impact_lakhs": 5.64,
+          "impact_amount": "+\u20b95.64 Lakhs"
+        }
+      ],
+      "top_negative": [
+        {
+          "feature": "tfidf_feat_12",
+          "factor": "Listing Description Keywords",
+          "description": "NLP terms extracted from listing description",
+          "impact_inr": -674134.25,
+          "impact_lakhs": -6.74,
+          "impact_amount": "-\u20b96.74 Lakhs"
+        },
+        {
+          "feature": "struct_balconies",
+          "factor": "Balconies",
+          "description": "Outdoor balcony space and ventilation",
+          "impact_inr": -293357.31,
+          "impact_lakhs": -2.93,
+          "impact_amount": "-\u20b92.93 Lakhs"
+        },
+        {
+          "feature": "struct_area_sqft",
+          "factor": "Area / Built-up Sq.ft",
+          "description": "Usable built-up area of the property",
+          "impact_inr": -288188.12,
+          "impact_lakhs": -2.88,
+          "impact_amount": "-\u20b92.88 Lakhs"
+        }
+      ]
+    },
+    "model_metrics": {
+      "r2_score": 0.6649,
+      "rmse_lakhs": 78.8,
+      "mae_lakhs": 49.26,
+      "dataset_size": 600
+    }
+  },
+  {
+    "property": {
+      "id": 16797,
+      "real_name": "4 BHK in Koramangala",
+      "display_title": "4 BHK in Koramangala",
+      "full_address": "Independent House, ITI Layout near AMMA PASTRIES, Koramangala, Bengaluru, Karnataka 560034",
+      "locality": "Koramangala",
+      "bhk": 4,
+      "area_sqft": 2200.0,
+      "price_formatted": "\u20b92.56 Cr",
+      "source": "NoBroker",
+      "source_type": "source_portal",
+      "source_listing_id": "8a9faf849a307f49019a30b525f30c89",
+      "source_url": "https://www.nobroker.in/property/buy/4-bhk-apartment-for-sale-in--hsr-layout-bangalore/8a9faf849a307f49019a30b525f30c89/detail"
+    },
+    "image": {
+      "image_provenance": "OWNER_UPLOADED",
+      "provenance_badge": "OWNER_UPLOADED",
+      "has_genuine_image": true,
+      "images_analyzed_by_resnet18": 4,
+      "cnn_embedding_dim": 512,
+      "cnn_embedding_sample": [
+        0.640999972820282,
+        0.32829999923706055,
+        1.6714999675750732,
+        0.5634999871253967
+      ],
+      "cnn_status": "ACTIVE"
+    },
+    "text": {
+      "description_available": true,
+      "tfidf_dimensions": 16,
+      "extracted_terms": []
+    },
+    "geo": {
+      "coordinates": "12.931908, 77.626299",
+      "coordinate_quality": "EXACT",
+      "geoapify_nearby_count": 48
+    },
+    "model": {
+      "fused_dimensions": 544,
+      "xgboost_prediction": 23520982.0,
+      "predicted_price_formatted": "\u20b9235.21 Lakhs"
+    },
+    "shap": {
+      "shap_available": true,
+      "top_positive": [
+        {
+          "feature": "struct_bhk",
+          "factor": "BHK Configuration",
+          "description": "Bedrooms and spatial layout",
+          "impact_inr": 5213508.0,
+          "impact_lakhs": 52.14,
+          "impact_amount": "+\u20b952.14 Lakhs"
+        },
+        {
+          "feature": "struct_area_sqft",
+          "factor": "Area / Built-up Sq.ft",
+          "description": "Usable built-up area of the property",
+          "impact_inr": 4404688.0,
+          "impact_lakhs": 44.05,
+          "impact_amount": "+\u20b944.05 Lakhs"
+        },
+        {
+          "feature": "struct_locality_encoded",
+          "factor": "Locality / Regional Demand",
+          "description": "Bengaluru micro-market price benchmark",
+          "impact_inr": 3312996.25,
+          "impact_lakhs": 33.13,
+          "impact_amount": "+\u20b933.13 Lakhs"
+        }
+      ],
+      "top_negative": [
+        {
+          "feature": "resnet18_feat_34",
+          "factor": "Visual Aesthetics (ResNet-18)",
+          "description": "CNN visual features from property imagery",
+          "impact_inr": -1174138.0,
+          "impact_lakhs": -11.74,
+          "impact_amount": "-\u20b911.74 Lakhs"
+        },
+        {
+          "feature": "geo_shopping_malls",
+          "factor": "Shopping Malls",
+          "description": "Retail, shopping and commercial hubs",
+          "impact_inr": -736763.31,
+          "impact_lakhs": -7.37,
+          "impact_amount": "-\u20b97.37 Lakhs"
+        },
+        {
+          "feature": "struct_bathrooms",
+          "factor": "Bathrooms",
+          "description": "Sanitary and en-suite facilities",
+          "impact_inr": -694027.81,
+          "impact_lakhs": -6.94,
+          "impact_amount": "-\u20b96.94 Lakhs"
+        }
+      ]
+    },
+    "model_metrics": {
+      "r2_score": 0.6649,
+      "rmse_lakhs": 78.8,
+      "mae_lakhs": 49.26,
+      "dataset_size": 600
+    }
+  },
+  {
+    "property": {
+      "id": 1,
+      "real_name": "Sobha Koramangala",
+      "display_title": "Sobha Koramangala",
+      "full_address": "Block 1, Main Road, Koramangala, Bengaluru - 560034",
+      "locality": "Koramangala",
+      "bhk": 2,
+      "area_sqft": 1200.0,
+      "price_formatted": "\u20b91.50 Cr",
+      "source": "Historical Dataset",
+      "source_type": "demo_dataset",
+      "source_listing_id": "BLR-LIST-1",
+      "source_url": "N/A"
+    },
+    "image": {
+      "image_provenance": "REPRESENTATIVE",
+      "provenance_badge": "REPRESENTATIVE",
+      "has_genuine_image": false,
+      "images_analyzed_by_resnet18": 4,
+      "cnn_embedding_dim": 512,
+      "cnn_embedding_sample": [
+        1.8907999992370605,
+        0.6507999897003174,
+        3.345599889755249,
+        0.48089998960494995
+      ],
+      "cnn_status": "ACTIVE"
+    },
+    "text": {
+      "description_available": true,
+      "tfidf_dimensions": 16,
+      "extracted_terms": [
+        "Premium",
+        "Security",
+        "Spacious"
+      ]
+    },
+    "geo": {
+      "coordinates": "12.9352, 77.6245",
+      "coordinate_quality": "EXACT",
+      "geoapify_nearby_count": 54
+    },
+    "model": {
+      "fused_dimensions": 544,
+      "xgboost_prediction": 8486918.0,
+      "predicted_price_formatted": "\u20b984.87 Lakhs"
+    },
+    "shap": {
+      "shap_available": true,
+      "top_positive": [
+        {
+          "feature": "struct_locality_encoded",
+          "factor": "Locality / Regional Demand",
+          "description": "Bengaluru micro-market price benchmark",
+          "impact_inr": 2057287.12,
+          "impact_lakhs": 20.57,
+          "impact_amount": "+\u20b920.57 Lakhs"
+        },
+        {
+          "feature": "geo_metro_stations",
+          "factor": "Metro Station Proximity",
+          "description": "Access to Namma Metro transit network",
+          "impact_inr": 208125.53,
+          "impact_lakhs": 2.08,
+          "impact_amount": "+\u20b92.08 Lakhs"
+        },
+        {
+          "feature": "geo_hospitals",
+          "factor": "Nearby Hospitals",
+          "description": "Healthcare and emergency facilities",
+          "impact_inr": 97969.12,
+          "impact_lakhs": 0.98,
+          "impact_amount": "+\u20b90.98 Lakhs"
+        }
+      ],
+      "top_negative": [
+        {
+          "feature": "struct_area_sqft",
+          "factor": "Area / Built-up Sq.ft",
+          "description": "Usable built-up area of the property",
+          "impact_inr": -5057196.0,
+          "impact_lakhs": -50.57,
+          "impact_amount": "-\u20b950.57 Lakhs"
+        },
+        {
+          "feature": "resnet18_feat_0",
+          "factor": "Visual Aesthetics (ResNet-18)",
+          "description": "CNN visual features from property imagery",
+          "impact_inr": -630118.75,
+          "impact_lakhs": -6.3,
+          "impact_amount": "-\u20b96.30 Lakhs"
+        },
+        {
+          "feature": "struct_bhk",
+          "factor": "BHK Configuration",
+          "description": "Bedrooms and spatial layout",
+          "impact_inr": -610303.12,
+          "impact_lakhs": -6.1,
+          "impact_amount": "-\u20b96.10 Lakhs"
+        }
+      ]
+    },
+    "model_metrics": {
+      "r2_score": 0.6649,
+      "rmse_lakhs": 78.8,
+      "mae_lakhs": 49.26,
+      "dataset_size": 600
+    }
+  }
+]

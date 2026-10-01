@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
-from app.api.v1 import auth, location, properties, ai
+from app.api.v1 import auth, location, properties, ai, listings, voice_assistant
 from app.services.seed_service import SeedService
 from app.models.user import User
 from app.models.subscription import Subscription
@@ -51,7 +51,9 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 app.include_router(location.router, prefix=f"{settings.API_V1_STR}/location", tags=["Location & GIS"])
 app.include_router(properties.router, prefix=f"{settings.API_V1_STR}/properties", tags=["Properties"])
+app.include_router(listings.router, prefix=f"{settings.API_V1_STR}/listings", tags=["Direct Listings"])
 app.include_router(ai.router, prefix=f"{settings.API_V1_STR}/ai", tags=["AI Engine"])
+app.include_router(voice_assistant.router, prefix=f"{settings.API_V1_STR}/voice-assistant", tags=["AI Voice Property Assistant"])
 
 @app.get("/")
 def root():

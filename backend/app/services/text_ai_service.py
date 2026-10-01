@@ -1,6 +1,7 @@
 import os
 import re
 import pickle
+import numpy as np
 from typing import Dict, Any, List
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -132,6 +133,33 @@ class TextAIService:
         return cls._vectorizer
 
     @classmethod
+    def extract_text_feature_vector(cls, description: str, n_features: int = 16) -> np.ndarray:
+        """
+        Extract numeric TF-IDF feature vector of fixed length n_features (default 16).
+        Returns np.ndarray of shape (n_features,) float32.
+        """
+        import numpy as np
+        if not description or not isinstance(description, str) or not description.strip():
+            return np.zeros(n_features, dtype=np.float32)
+
+        try:
+            vec = cls._get_vectorizer()
+            clean_text = cls._preprocess_text(description)
+            tfidf_mat = vec.transform([clean_text])
+            dense = tfidf_mat.toarray()[0]
+            
+            if len(dense) >= n_features:
+                feat = dense[:n_features]
+            else:
+                feat = np.zeros(n_features, dtype=np.float32)
+                feat[:len(dense)] = dense
+                
+            return feat.astype(np.float32)
+        except Exception as e:
+            print(f"Error in extract_text_feature_vector: {e}")
+            return np.zeros(n_features, dtype=np.float32)
+
+    @classmethod
     def _extract_top_tfidf(cls, description: str, top_n: int = 8) -> List[Dict[str, Any]]:
         if not description or not description.strip():
             return []
@@ -234,6 +262,8 @@ class TextAIService:
         """Analyze property description text using TF-IDF, Sentiment, and Feature Extraction NLP."""
         if not description or not description.strip():
             return {
+                "text_available": False,
+                "status": "TEXT DATA UNAVAILABLE",
                 "text_quality_score": 60.0,
                 "premium_listing_score": 50.0,
                 "detected_keywords": [],
@@ -288,6 +318,8 @@ class TextAIService:
             readability_label = "Basic"
 
         return {
+            "text_available": True,
+            "status": "TEXT DATA AVAILABLE",
             "text_quality_score": round(text_quality_score, 1),
             "premium_listing_score": round(premium_listing_score, 1),
             "detected_keywords": detected,

@@ -106,6 +106,18 @@ export const Navbar = () => {
               <User className="w-4 h-4" />
               Profile
             </Link>
+
+            <Link
+              to="/list-property"
+              className={`flex items-center gap-1.5 text-sm font-semibold px-3.5 py-1.5 rounded-xl transition-all shadow-md ${
+                isActive('/list-property')
+                  ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                  : 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30'
+              }`}
+            >
+              <Building2 className="w-4 h-4 text-emerald-400 group-hover:text-white" />
+              List Your Property
+            </Link>
           </div>
 
 

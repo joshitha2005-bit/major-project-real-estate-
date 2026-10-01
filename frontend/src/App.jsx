@@ -11,6 +11,7 @@ import { PropertyDetailsPage } from './pages/PropertyDetailsPage';
 import { PropertyListingsPage } from './pages/PropertyListingsPage';
 import { AiDashboardPage } from './pages/AiDashboardPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
+import { ListPropertyPage } from './pages/ListPropertyPage';
 
 function App() {
 
@@ -53,6 +54,8 @@ function App() {
           
           <Route path="/properties/:id" element={<PropertyDetailsPage />} />
           
+          <Route path="/list-property" element={<ProtectedRoute><ListPropertyPage /></ProtectedRoute>} />
+
           <Route path="/analytics" element={<AiDashboardPage />} />
           <Route path="/analytics/:id" element={<AiDashboardPage />} />
 

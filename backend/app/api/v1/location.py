@@ -254,3 +254,23 @@ def delete_saved_location(
     db.delete(saved)
     db.commit()
     return None
+
+@router.get("/routes")
+async def get_navigation_routes(
+    origin_lat: float = Query(..., ge=-90.0, le=90.0, description="Origin latitude"),
+    origin_lon: float = Query(..., ge=-180.0, le=180.0, description="Origin longitude"),
+    dest_lat: float = Query(..., ge=-90.0, le=90.0, description="Destination latitude"),
+    dest_lon: float = Query(..., ge=-180.0, le=180.0, description="Destination longitude"),
+):
+    """
+    Compute real multi-modal navigation routes (Car, Bike, Public Transit)
+    using live Geoapify Routing API.
+    """
+    routes_data = await GeoapifyService.get_multi_mode_routes(
+        origin_lat=origin_lat,
+        origin_lon=origin_lon,
+        dest_lat=dest_lat,
+        dest_lon=dest_lon
+    )
+    return routes_data
+

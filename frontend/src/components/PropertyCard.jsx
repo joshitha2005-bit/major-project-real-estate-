@@ -65,6 +65,12 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
     property.source_type === 'owner_listing' ||
     property.source_type === 'PROPPULSE_DIRECT'
   ) && !isHistorical;
+  const isCurrentSource = property && (
+    property.source_name === 'NoBroker.in' ||
+    property.source === 'NoBroker' ||
+    property.source_type === 'source_portal' ||
+    property.listing_status === 'CURRENT_SOURCE_LISTING'
+  );
   
   // Extract primary / first image if available
   let primaryImage = null;
@@ -76,7 +82,17 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
   }
 
   const [imgError, setImgError] = useState(false);
-  const mainImage = (!imgError && primaryImage && primaryImage.trim() !== '') ? primaryImage : null;
+  const prov = (property.image_provenance || property.gallery?.image_provenance || '').toUpperCase();
+  const hasImage = !imgError && primaryImage && primaryImage.trim() !== '';
+  const isActualPropertyPhoto = hasImage && (
+    prov === 'PROPERTY_SPECIFIC' || 
+    prov === 'USER_UPLOADED' || 
+    prov === 'OWNER_UPLOADED' ||
+    (property.has_genuine_image && prov !== 'REPRESENTATIVE' && prov !== 'AI_GENERATED')
+  );
+  const isAiGenerated = hasImage && prov === 'AI_GENERATED';
+  const isRepresentative = hasImage && !isActualPropertyPhoto && !isAiGenerated;
+  const hasVerifiedImage = hasImage;
 
   // Phone contact privacy: ONLY allowed for genuine owner listings
   const isOwnerListing = property.source_type === 'owner_listing';
@@ -93,9 +109,9 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
         <div>
           {/* Image Canvas */}
           <div className="relative aspect-[16/10] overflow-hidden bg-slate-900">
-            {mainImage && !isHistorical ? (
+            {hasVerifiedImage ? (
               <img 
-                src={mainImage} 
+                src={primaryImage} 
                 onError={() => setImgError(true)}
                 alt={displayName} 
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
@@ -103,7 +119,7 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/90 text-slate-500 gap-2 p-4">
                 <Building2 className="w-10 h-10 text-slate-700" />
-                <span className="text-xs font-semibold text-slate-400">Image Not Available</span>
+                <span className="text-xs font-semibold text-slate-400">PROPERTY IMAGE UNAVAILABLE</span>
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-transparent opacity-80"></div>
@@ -119,23 +135,41 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
               <span className={`px-2.5 py-1 rounded-full backdrop-blur-md border text-[10px] font-extrabold uppercase tracking-wider ${
                 isDirect
                   ? 'bg-emerald-500/25 border-emerald-500/50 text-emerald-300'
-                  : (property.source_type === 'authorized_provider' || property.listing_status === 'AUTHORIZED')
-                    ? 'bg-blue-500/25 border-blue-500/50 text-blue-300'
-                    : property.listing_status === 'REFERENCE'
-                      ? 'bg-sky-500/25 border-sky-500/50 text-sky-300'
-                      : 'bg-amber-500/25 border-amber-500/50 text-amber-300'
+                  : isCurrentSource
+                    ? 'bg-cyan-500/25 border-cyan-500/50 text-cyan-300'
+                    : (property.source_type === 'authorized_provider' || property.listing_status === 'AUTHORIZED')
+                      ? 'bg-blue-500/25 border-blue-500/50 text-blue-300'
+                      : property.listing_status === 'REFERENCE'
+                        ? 'bg-sky-500/25 border-sky-500/50 text-sky-300'
+                        : 'bg-amber-500/25 border-amber-500/50 text-amber-300'
               }`}>
                 {isDirect
                   ? 'PROPPULSE DIRECT'
-                  : (property.source_type === 'authorized_provider' || property.listing_status === 'AUTHORIZED')
-                    ? 'AUTHORIZED PROVIDER'
-                    : property.listing_status === 'REFERENCE'
-                      ? 'MARKET REFERENCE'
-                      : 'HISTORICAL MARKET DATA'}
+                  : isCurrentSource
+                    ? 'CURRENT SOURCE LISTING'
+                    : (property.source_type === 'authorized_provider' || property.listing_status === 'AUTHORIZED')
+                      ? 'AUTHORIZED PROVIDER'
+                      : property.listing_status === 'REFERENCE'
+                        ? 'MARKET REFERENCE'
+                        : 'HISTORICAL MARKET DATA'}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-slate-900/90 backdrop-blur-md border border-slate-700 text-[9px] font-semibold text-slate-350">
-                {isDirect && property.has_genuine_image ? 'OWNER UPLOADED IMAGE' : (property.images && property.images.length > 0 ? 'LOCATION/BUILDING REFERENCE' : 'PROPERTY IMAGE UNAVAILABLE')}
-              </span>
+              {isActualPropertyPhoto ? (
+                <span className="px-2 py-0.5 rounded-full backdrop-blur-md border text-[9px] font-bold bg-emerald-950/90 border-emerald-500/50 text-emerald-300">
+                  ACTUAL PROPERTY IMAGE
+                </span>
+              ) : isRepresentative ? (
+                <span className="px-2 py-0.5 rounded-full backdrop-blur-md border text-[9px] font-bold bg-amber-950/90 border-amber-500/40 text-amber-300" title="Representative image — not the actual property">
+                  REPRESENTATIVE IMAGE — NOT ACTUAL PROPERTY
+                </span>
+              ) : isAiGenerated ? (
+                <span className="px-2 py-0.5 rounded-full backdrop-blur-md border text-[9px] font-bold bg-purple-950/90 border-purple-500/40 text-purple-300">
+                  AI-GENERATED REFERENCE — NOT PROPERTY EVIDENCE
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full backdrop-blur-md border text-[9px] font-bold bg-slate-900/90 border-slate-700 text-slate-400">
+                  PROPERTY IMAGE UNAVAILABLE
+                </span>
+              )}
             </div>
 
             {/* Price Badge */}
@@ -155,14 +189,21 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
               <span className="text-brand-400 font-semibold">{property.locality || 'Bengaluru'}</span>
               <span className="text-slate-700">•</span>
               <span className={isHistorical ? 'text-amber-400 font-semibold' : 'text-emerald-400 font-semibold'}>
-                {isDirect ? 'PropPulse Direct' : 'Historical Dataset'}
+                {isDirect ? 'PropPulse Direct' : isCurrentSource ? 'NoBroker Verified Listing' : 'Historical Dataset'}
               </span>
             </div>
 
             {/* 1. ACTUAL BUILDING / PROJECT / PROPERTY NAME */}
             <h3 className="text-base font-bold text-white line-clamp-1 group-hover:text-brand-300 transition-colors font-outfit">
-              {disp.buildingName}
+              {disp.primaryTitle}
             </h3>
+
+            {/* Unresolved Identity Indicator */}
+            {disp.identitySubtitle && (
+              <p className="text-[11px] text-slate-400 italic -mt-1 font-medium flex items-center gap-1">
+                <span>{disp.identitySubtitle}</span>
+              </p>
+            )}
 
             {/* 2. SUB-LOCALITY / LOCALITY, BENGALURU */}
             <p className="text-xs text-brand-300 font-semibold flex items-center gap-1.5 line-clamp-1">
@@ -191,7 +232,7 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
 
             {/* Location Accuracy Badge */}
             <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-800/60">
-              <span className="text-slate-400">Location Accuracy:</span>
+              <span className="text-slate-400">Location Confidence:</span>
               <span className={`font-semibold px-2 py-0.5 rounded text-[10px] ${
                 disp.isExact 
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
@@ -204,51 +245,42 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
             {/* Historical Warning */}
             {isHistorical && (
               <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[10px] text-amber-300 leading-snug">
-                <strong>Historical Data:</strong> Market-data record — price and availability are benchmarked.
+                <strong>Historical Market Data:</strong> Transaction benchmark record.
               </div>
             )}
           </div>
         </div>
 
-        {/* Card Actions Footer */}
+        {/* Card Actions Footer: View Details, Open Map, Get Directions */}
         <div className="p-4 border-t border-slate-800/80 bg-slate-900/40 flex flex-col gap-2">
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="grid grid-cols-3 gap-1.5 text-xs">
             <Link
               to={`/properties/${property.id}`}
-              className="px-3 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-center flex items-center justify-center gap-1.5 transition-all shadow-md shadow-brand-500/20"
+              className="px-2 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-center flex items-center justify-center gap-1 transition-all shadow-md shadow-brand-500/20 text-[11px]"
+              title="View property details"
             >
               <Eye className="w-3.5 h-3.5" />
-              <span>View Details</span>
+              <span>Details</span>
             </Link>
 
-            {onSelectOnMap ? (
-              <button
-                onClick={() => onSelectOnMap(property)}
-                className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-center flex items-center justify-center gap-1.5 transition-all"
-              >
-                <Compass className="w-3.5 h-3.5 text-accent-400" />
-                <span>View on Map</span>
-              </button>
-            ) : (
-              <Link
-                to={`/analytics/${property.id}`}
-                className="px-3 py-2.5 rounded-xl bg-accent-500/10 hover:bg-accent-500/20 text-accent-300 border border-accent-500/30 font-semibold text-center flex items-center justify-center gap-1.5 transition-all"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Dashboard</span>
-              </Link>
-            )}
-          </div>
+            <button
+              onClick={() => onSelectOnMap ? onSelectOnMap(property) : window.open(`https://www.google.com/maps/search/?api=1&query=${property.latitude},${property.longitude}`, '_blank')}
+              className="px-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-center flex items-center justify-center gap-1 transition-all border border-slate-700 text-[11px]"
+              title="Open property in Map"
+            >
+              <Compass className="w-3.5 h-3.5 text-accent-400" />
+              <span>Map</span>
+            </button>
 
-          {/* Quick Navigate Button with real browser geolocation */}
-          <button
-            onClick={() => navigateToProperty(property)}
-            title={disp.isExact ? "Navigate to exact property coordinates" : "Directions to locality area"}
-            className="w-full py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold text-center flex items-center justify-center gap-1.5 transition-all text-xs"
-          >
-            <Navigation className="w-3.5 h-3.5" />
-            <span>{disp.isExact ? "Navigate to Property" : "Directions to Area"}</span>
-          </button>
+            <button
+              onClick={() => navigateToProperty(property)}
+              className="px-2 py-2 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-semibold text-center flex items-center justify-center gap-1 transition-all shadow-md shadow-emerald-500/20 text-[11px]"
+              title={disp.isExact ? "Navigate from your location to exact property" : "Get directions to locality area"}
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              <span>Directions</span>
+            </button>
+          </div>
 
           {/* Contact buttons ONLY for real verified owner listings */}
           {isOwnerListing && displayPhone ? (

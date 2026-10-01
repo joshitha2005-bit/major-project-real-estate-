@@ -124,62 +124,113 @@ class PricePredictionService:
         area_sqft: float,
         bhk: int,
         bathrooms: int,
-        parking: str,
-        facing: str,
-        property_age: str,
-        nearby_places: List[Dict[str, Any]],
+        parking: str = "Covered",
+        facing: str = "East",
+        property_age: str = "New",
+        nearby_places: List[Dict[str, Any]] = None,
         image_score: float = 80.0,
-        text_score: float = 75.0
+        text_score: float = 75.0,
+        listed_price: float = None,
+        balconies: int = 1,
+        area_type: str = "Super built-up Area"
     ) -> Dict[str, Any]:
         """
         Predict property valuation using genuine trained XGBoost model and generate
-        dynamic SHAP feature explanations.
+        dynamic feature attribution and evaluation metrics.
         """
-        global _MODEL_PIPELINE, _TREE_EXPLAINER, _KNOWN_LOCATIONS
+        global _MODEL_PIPELINE, _TREE_EXPLAINER, _KNOWN_LOCATIONS, _META_DATA
         if _MODEL_PIPELINE is None:
             _load_model()
 
-        # 1. Extract locality & construct inference record
+        # 1. Feature Validation
+        if area_sqft is None or area_sqft <= 0:
+            return {
+                "error": True,
+                "detail": "Invalid property area: area_sqft must be a positive number.",
+                "predicted_selling_price": 0.0,
+                "price_per_sqft": 0.0
+            }
+            
+        if bhk is None or bhk <= 0:
+            return {
+                "error": True,
+                "detail": "Invalid property layout: BHK must be a positive integer.",
+                "predicted_selling_price": 0.0,
+                "price_per_sqft": 0.0
+            }
+
+        # 2. Extract locality & construct inference record
         matched_locality = PricePredictionService.extract_locality(address)
+        is_known = matched_locality != "Other"
         if _KNOWN_LOCATIONS and matched_locality not in _KNOWN_LOCATIONS:
             matched_locality = "Other"
 
-        area_sqft_val = float(max(100.0, float(area_sqft)))
-        bhk_val = float(max(1, int(bhk)))
-        bath_val = float(max(1, int(bathrooms)))
-        balcony_val = 1.0  # Default safe value
+        area_sqft_val = float(area_sqft)
+        bhk_val = float(bhk)
+        bath_val = float(max(1, int(bathrooms or 1)))
+        balcony_val = float(max(0, int(balconies or 1)))
+        area_type_val = str(area_type or "Super built-up Area").strip()
 
         X_infer = pd.DataFrame([{
             "location": matched_locality,
-            "area_type": "Super built-up Area",
+            "area_type": area_type_val,
             "total_sqft": area_sqft_val,
             "bhk": bhk_val,
             "bath": bath_val,
             "balcony": balcony_val
         }])
 
-        # 2. Run Genuine XGBoost Prediction
+        # 3. Run Genuine XGBoost Prediction
         if _MODEL_PIPELINE is not None:
             try:
                 predicted_raw = float(_MODEL_PIPELINE.predict(X_infer)[0])
                 predicted_selling_price = float(round(max(500000.0, predicted_raw), 2))
             except Exception as e:
                 print(f"XGBoost Prediction exception: {e}")
+                # Baseline estimate per sqft if inference fails
                 predicted_selling_price = float(round(7500.0 * area_sqft_val, 2))
         else:
             predicted_selling_price = float(round(7500.0 * area_sqft_val, 2))
 
-        # 3. Derived Valuation Metrics (All standard Python float)
+        # 4. Price / Sqft strictly calculated from predicted price and total_sqft
+        predicted_price_per_sqft = float(round(predicted_selling_price / area_sqft_val, 2))
+        price_per_sqft = predicted_price_per_sqft
         estimated_rental_price = float(round((predicted_selling_price * 0.036) / 12.0, 2))
-        price_per_sqft = float(round(predicted_selling_price / area_sqft_val, 2))
 
-        # 4. Model Reliability / Confidence Indicator
-        r2_base = float(_META_DATA.get("metrics", {}).get("r2", 0.72) * 100.0) if _META_DATA else 72.3
-        is_known = 15.0 if matched_locality != "Other" else 5.0
-        sqft_bonus = 5.0 if 400.0 <= area_sqft_val <= 8000.0 else 2.0
-        confidence_score = float(round(min(95.0, max(68.0, r2_base + is_known + sqft_bonus)), 1))
+        # 5. Listed Price vs Prediction Comparison
+        actual_price = float(listed_price) if listed_price and listed_price > 0 else None
+        actual_price_per_sqft = float(round(actual_price / area_sqft_val, 2)) if actual_price else None
+        
+        difference = float(round(predicted_selling_price - actual_price, 2)) if actual_price else None
+        difference_percentage = float(round(((predicted_selling_price - actual_price) / actual_price) * 100.0, 2)) if actual_price else None
 
-        # 5. Dynamic SHAP Feature Attribution
+        # 6. Separate Model Performance Metrics & Data Quality Score
+        metrics_dict = _META_DATA.get("metrics", {}) if _META_DATA else {}
+        model_metrics = {
+            "model_version": _META_DATA.get("model_version", "1.0.0-xgboost-bengaluru") if _META_DATA else "1.0.0-xgboost-bengaluru",
+            "r2": metrics_dict.get("r2", 0.7843),
+            "mae_inr": metrics_dict.get("mae_inr", 2326926.39),
+            "mae_lakhs": metrics_dict.get("mae_lakhs", 23.27),
+            "rmse_inr": metrics_dict.get("rmse_inr", 4800515.46),
+            "rmse_lakhs": metrics_dict.get("rmse_lakhs", 48.01),
+            "mape_percent": metrics_dict.get("mape", 25.18)
+        }
+
+        # Data Quality (Completeness & Locality Validation)
+        locality_score = 90.0 if is_known else 60.0
+        specs_score = 100.0 if (area_sqft_val > 0 and bhk_val > 0 and bath_val > 0) else 70.0
+        data_quality_score = float(round((locality_score + specs_score) / 2.0, 1))
+
+        data_quality = {
+            "locality_matched": matched_locality,
+            "is_known_locality": is_known,
+            "completeness_score": data_quality_score
+        }
+
+        # Backwards compatible confidence_score field (Data Quality Completeness)
+        confidence_score = data_quality_score
+
+        # 7. Dynamic SHAP Feature Attribution
         top_positive_factors = []
         top_negative_factors = []
         feature_importance = []
@@ -296,10 +347,20 @@ class PricePredictionService:
             ]
 
         return {
+            "error": False,
             "predicted_selling_price": predicted_selling_price,
-            "estimated_rental_price": estimated_rental_price,
+            "predicted_price": predicted_selling_price,
+            "predicted_price_per_sqft": predicted_price_per_sqft,
             "price_per_sqft": price_per_sqft,
+            "estimated_rental_price": estimated_rental_price,
+            "listed_price": actual_price,
+            "actual_price": actual_price,
+            "actual_price_per_sqft": actual_price_per_sqft,
+            "difference": difference,
+            "difference_percentage": difference_percentage,
             "confidence_score": confidence_score,
+            "model_metrics": model_metrics,
+            "data_quality": data_quality,
             "shap_explanation": {
                 "top_positive_factors": top_positive_factors,
                 "top_negative_factors": top_negative_factors,

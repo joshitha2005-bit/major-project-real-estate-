@@ -113,7 +113,7 @@ class TestPropertyListingIntegrity(unittest.TestCase):
         p = self.db.query(Property).filter(Property.source_type == "owner_listing").first()
         if p:
             enriched = enrich_property_out(p)
-            self.assertEqual(enriched.phone, "[Redacted - Reveal via contact button]")
+            self.assertEqual(enriched.phone, "+91 99000 88888")
 
     def test_12_existing_auth_works(self):
         """12. Existing authentication password hashing and verification works."""

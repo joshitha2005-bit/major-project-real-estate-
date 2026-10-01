@@ -30,6 +30,12 @@ export const resolvePropertyDisplay = (property) => {
   if (!property) {
     return {
       buildingName: 'Property',
+      primaryTitle: 'Property',
+      identitySubtitle: null,
+      isResolved: false,
+      isPartial: false,
+      isUnresolved: true,
+      identityConfidence: 'IDENTITY_UNRESOLVED',
       locationLine: 'Bengaluru, Karnataka',
       addressLine: '',
       fullAddress: 'Bengaluru, Karnataka',
@@ -41,35 +47,58 @@ export const resolvePropertyDisplay = (property) => {
     };
   }
 
-  // 1. Resolve Building / Project Name
-  const rawTitle = (property.title || '').trim();
-  const rawSociety = (property.society || '').trim();
+  // 1. Identity Confidence from source record
+  const identityConfidence = property.identity_confidence || 
+    (property.building_name ? 'IDENTITY_RESOLVED' : (property.sub_locality ? 'IDENTITY_PARTIAL' : 'IDENTITY_UNRESOLVED'));
+
   const rawBuilding = (property.building_name || '').trim();
   const rawProject = (property.project_name || '').trim();
+  const rawSociety = (property.society_name || property.society || '').trim();
+  const rawTitle = (property.title || '').trim();
 
-  let buildingName = '';
+  const INVALID_BUILDING_NAMES = new Set([
+    'sb', 'apartment', 'apartments', 'aparment', 'stand alone building',
+    'standlone building', 'standalone building', 'villa', 'plot', 'land',
+    'residential apartment', 'independent house', 'house', 'biotech park'
+  ]);
 
-  // Check explicit building/project/society fields first
-  if (rawBuilding && !isAnonymizedCode(rawBuilding)) {
-    buildingName = rawBuilding;
-  } else if (rawProject && !isAnonymizedCode(rawProject)) {
-    buildingName = rawProject;
-  } else if (rawSociety && rawSociety.toLowerCase() !== 'none' && !isAnonymizedCode(rawSociety)) {
-    buildingName = rawSociety;
-  } else if (rawTitle && !rawTitle.toLowerCase().startsWith('property in') && !/^\d+\s*bhk\s+in\s+/i.test(rawTitle)) {
-    // If title has a genuine building name like "Prestige Lakeside Habitat" or "Sobha Koramangala 2BHK Apartment"
-    buildingName = rawTitle;
+  const isValidBuilding = (name) => {
+    if (!name || isAnonymizedCode(name)) return false;
+    const lower = name.toLowerCase().trim();
+    if (INVALID_BUILDING_NAMES.has(lower)) return false;
+    if (lower.includes(' village')) return false;
+    const locLower = (property.locality || '').toLowerCase().trim();
+    if (locLower && lower === locLower) return false;
+    return true;
+  };
+
+  let resolvedBuilding = '';
+  if (isValidBuilding(rawBuilding)) {
+    resolvedBuilding = rawBuilding;
+  } else if (isValidBuilding(rawProject)) {
+    resolvedBuilding = rawProject;
+  } else if (isValidBuilding(rawSociety)) {
+    resolvedBuilding = rawSociety;
+  } else if (identityConfidence === 'IDENTITY_RESOLVED' && isValidBuilding(rawTitle) && !/^\d+\s*bhk/i.test(rawTitle)) {
+    resolvedBuilding = rawTitle;
   }
 
-  // If no genuine building name exists in source, formulate honest property-type title
-  // RULE: NEVER use only "Koramangala" as property name!
-  if (!buildingName || buildingName.toLowerCase() === (property.locality || '').toLowerCase() || isAnonymizedCode(buildingName)) {
-    const bhkPrefix = property.bhk ? `${property.bhk} BHK ` : '';
-    const typeStr = property.property_type && property.property_type !== 'Not specified' ? property.property_type : 'Residential Property';
-    buildingName = `${bhkPrefix}${typeStr}`.trim();
-  }
+  const isResolved = Boolean(resolvedBuilding) && identityConfidence === 'IDENTITY_RESOLVED';
+  const isPartial = !isResolved && (identityConfidence === 'IDENTITY_PARTIAL' || Boolean(property.sub_locality));
+  const isUnresolved = !isResolved && !isPartial;
 
-  // 2. Resolve Sub-Locality / Locality Line
+  // Title formulation: Truthful descriptive title e.g. "3 BHK Independent House in Koramangala"
+  const bhkPrefix = property.bhk ? (property.bhk > 4 ? `${property.bhk} Bedroom ` : `${property.bhk} BHK `) : '';
+  const typeStr = property.property_type && property.property_type !== 'Not specified' ? property.property_type : 'Apartment';
+  const locPart = (property.locality || 'Bengaluru').trim();
+  const propertyTypeTitle = `${bhkPrefix}${typeStr}`.trim();
+  const truthfulListingTitle = locPart ? `${propertyTypeTitle} in ${locPart}` : propertyTypeTitle;
+
+  const buildingName = isResolved ? resolvedBuilding : truthfulListingTitle;
+  const primaryTitle = buildingName;
+  const identitySubtitle = isUnresolved ? "Building name unavailable in source" : null;
+
+  // 2. Sub-Locality / Locality Line
   const loc = (property.locality || 'Bengaluru').trim();
   const subLoc = (property.sub_locality || '').trim();
   
@@ -82,21 +111,22 @@ export const resolvePropertyDisplay = (property) => {
     locationLine = `${loc}, Bengaluru`;
   }
 
-  // 3. Resolve Specific Street / Road / Address Line
-  const addr = (property.address || '').trim();
+  // 3. Street / Road / Address Line
+  const addr = (property.address || property.formatted_address || '').trim();
   let addressLine = '';
-  if (addr) {
-    // Check if address has additional specific details beyond just the locality name
+  if (property.street || property.road) {
+    addressLine = [property.street, property.road].filter(Boolean).join(', ');
+  } else if (addr) {
     const cleanAddr = addr.replace(/,\s*(bengaluru|bangalore|karnataka|india)\b/gi, '').trim();
     if (cleanAddr && cleanAddr.toLowerCase() !== loc.toLowerCase()) {
-      addressLine = addr;
+      addressLine = cleanAddr;
     }
   }
 
-  // 4. Coordinate accuracy evaluation
-  const isExact = property.coordinate_status === 'EXACT' || 
-                  property.coordinate_quality === 'EXACT' ||
-                  property.coordinate_confidence === 'EXACT';
+  // 4. Coordinate accuracy
+  const isExact = property.coordinate_confidence === 'EXACT' || 
+                  property.coordinate_status === 'EXACT' || 
+                  property.coordinate_quality === 'EXACT';
 
   const coordinateAccuracy = isExact 
     ? 'Exact property location' 
@@ -114,14 +144,20 @@ export const resolvePropertyDisplay = (property) => {
 
   return {
     buildingName,
+    primaryTitle,
+    identitySubtitle,
+    isResolved,
+    isPartial,
+    isUnresolved,
+    identityConfidence: isResolved ? 'IDENTITY_RESOLVED' : (isPartial ? 'IDENTITY_PARTIAL' : 'IDENTITY_UNRESOLVED'),
     locationLine,
     addressLine,
-    fullAddress: addr || locationLine,
+    fullAddress: property.formatted_address || addr || locationLine,
     isExact,
     coordinateAccuracy,
     coordinatesText,
     pricePerSqftText: pSqft,
-    propertyType: property.property_type || 'Property',
+    propertyType: typeStr,
     lat: property.latitude,
     lon: property.longitude
   };
