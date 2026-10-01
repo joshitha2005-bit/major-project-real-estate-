@@ -101,7 +101,9 @@ def run_migrations(target_path: str = None):
                 "contact_verified_at": "DATETIME",
                 "contact_display_permission": "BOOLEAN DEFAULT 0",
                 "source_platform": "VARCHAR(100)",
-                "source_listing_url": "VARCHAR(500)"
+                "source_listing_url": "VARCHAR(500)",
+                "dataset_category": "VARCHAR(50) DEFAULT 'REFERENCE_HISTORICAL'",
+                "is_main_ai_ready": "BOOLEAN DEFAULT 0" 
             }
 
             for col_name, col_type in prop_new_cols.items():

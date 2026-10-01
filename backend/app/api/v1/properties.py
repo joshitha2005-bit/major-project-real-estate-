@@ -442,6 +442,8 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "uploaded_images": p.property_images or [],
         "created_at": p.created_at,
         "last_verified_at": getattr(p, "last_verified_at", None),
+        "dataset_category": getattr(p, "dataset_category", "REFERENCE_HISTORICAL"),
+        "is_main_ai_ready": bool(getattr(p, "is_main_ai_ready", False)),
 
         # Objective 20B fields
         "image_status": img_info.get("image_classification", "NO_IMAGE"),
@@ -615,6 +617,8 @@ def list_properties(
     verified_only: Optional[bool] = Query(None, description="Filter verified listings only"),
     has_real_image: Optional[bool] = Query(None, description="Filter listings with authentic images"),
     source_type: Optional[str] = Query(None, description="Filter by source type e.g. PROPPULSE_DIRECT, HISTORICAL_MARKET_DATA"),
+    dataset_category: Optional[str] = Query(None, description="Filter by category: MAIN_AI_READY, REFERENCE_HISTORICAL"),
+    include_historical: Optional[bool] = Query(False, description="Whether to include reference historical properties"),
     lat: Optional[float] = Query(None),
     lon: Optional[float] = Query(None),
     page: Optional[int] = Query(None, description="Page index"),
@@ -716,6 +720,16 @@ def list_properties(
     if parking and parking != "All":
         q = q.filter(Property.parking.ilike(parking))
 
+    # Master AI-Ready Dataset default isolation:
+    # By default, query ONLY MAIN_AI_READY properties unless explicitly querying historical or specific category
+    dataset_category = resolve_val(dataset_category)
+    include_historical = resolve_val(include_historical)
+
+    if dataset_category:
+        q = q.filter(Property.dataset_category == dataset_category)
+    elif not include_historical and not source_type and not current_only and final_listing_type != "Dataset":
+        q = q.filter(Property.is_main_ai_ready == True)
+
     # Phase C Filters
     if current_only:
         q = q.filter(
@@ -785,6 +799,10 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     exact_count = db.query(Property).filter(Property.coordinate_quality == "EXACT").count()
     approx_count = db.query(Property).filter(Property.coordinate_quality == "LOCALITY_APPROXIMATE").count()
     
+    main_ai_ready_count = db.query(Property).filter(Property.is_main_ai_ready == True).count()
+    historical_ref_count = db.query(Property).filter(Property.dataset_category == "REFERENCE_HISTORICAL").count()
+    quarantine_count = db.query(Property).filter(Property.dataset_category == "INVALID_QUARANTINE").count()
+
     apartments = db.query(Property).filter(Property.property_type.ilike("%Apartment%")).count()
     villas = db.query(Property).filter(Property.property_type.ilike("%Villa%")).count()
     houses = db.query(Property).filter(Property.property_type.ilike("%House%")).count()
@@ -801,6 +819,9 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "verified_direct": owner + demo,
         "exact_coords": exact_count,
         "approx_coords": approx_count,
+        "main_ai_ready": main_ai_ready_count,
+        "reference_historical": historical_ref_count,
+        "quarantined": quarantine_count,
         "apartments": apartments,
         "villas": villas,
         "houses": houses,

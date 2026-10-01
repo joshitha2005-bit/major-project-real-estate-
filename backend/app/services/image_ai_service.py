@@ -90,6 +90,22 @@ class ImageAIService:
             return np.zeros(512, dtype=np.float32)
 
         try:
+            # Check local disk cache
+            resolved_base = base_dir or os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            cache_dir = os.path.join(resolved_base, "models", "image_cache")
+            c_path = None
+            if os.path.exists(cache_dir):
+                import hashlib
+                h = hashlib.sha256(image_source.encode("utf-8")).hexdigest()[:16]
+                c_path = os.path.join(cache_dir, f"embed_{h}.npy")
+                if os.path.exists(c_path):
+                    try:
+                        c_feat = np.load(c_path)
+                        if len(c_feat) == 512:
+                            return c_feat
+                    except Exception:
+                        pass
+
             pil_img = cls._load_pil_image(image_source, base_dir=base_dir)
             if pil_img is None:
                 return np.zeros(512, dtype=np.float32)
@@ -104,8 +120,22 @@ class ImageAIService:
                 _ = model(input_tensor)
 
             feat = np.array(cls._features_blob, dtype=np.float32).flatten()
+            res_feat = None
             if len(feat) == 512:
-                return feat
+                res_feat = feat
+            elif len(feat) > 512:
+                res_feat = feat[:512]
+            elif len(feat) > 0:
+                padded = np.zeros(512, dtype=np.float32)
+                padded[:len(feat)] = feat
+                res_feat = padded
+            if res_feat is not None and c_path and os.path.exists(cache_dir):
+                try:
+                    np.save(c_path, res_feat)
+                except Exception:
+                    pass
+            if res_feat is not None:
+                return res_feat
             elif len(feat) > 512:
                 return feat[:512]
             elif len(feat) > 0:

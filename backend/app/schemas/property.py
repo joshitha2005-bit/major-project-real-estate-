@@ -138,6 +138,8 @@ class PropertyOut(PropertyBase):
     transaction_type: Optional[str] = "sale"
     price_per_sqft: Optional[float] = None
     price_formatted: Optional[str] = None
+    dataset_category: Optional[str] = "REFERENCE_HISTORICAL"
+    is_main_ai_ready: Optional[bool] = False
     coordinate_quality: Optional[str] = None
     coordinate_status: Optional[str] = None
     property_type_source: Optional[str] = None

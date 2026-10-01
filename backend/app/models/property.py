@@ -77,6 +77,10 @@ class Property(Base):
     data_timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     anomaly_flags = Column(JSON, default=list)
 
+    # Master AI Ready Dataset Separation
+    dataset_category = Column(String(50), default="REFERENCE_HISTORICAL", index=True) # MAIN_AI_READY, REFERENCE_HISTORICAL, INVALID_QUARANTINE
+    is_main_ai_ready = Column(Boolean, default=False, index=True)
+
     # Canonical Property Identity & Location Resolution fields
     property_name = Column(String(255), nullable=True)
     building_name = Column(String(255), nullable=True)
