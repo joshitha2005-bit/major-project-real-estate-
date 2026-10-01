@@ -335,3 +335,38 @@ Below is empirical runtime evidence for 10 properties sampled from distinct Beng
 * **Default `/properties` Query:** Constrained strictly to `Property.is_main_ai_ready == True` (`dataset_category == 'MAIN_AI_READY'`).
 * **Visual Badge Guarantee:** Every property displayed in the main browse interface features authentic source listing photographs labelled with legitimate provenance (`PROPERTY_SPECIFIC`).
 * **No Synthetic Hallucinations:** All prices, coordinates, descriptions, and photographs are sourced directly from verified listings.
+
+---
+
+## 7. Excluded & Quarantined Properties Analysis
+
+Strict quality gates mandate that properties without verifiable listing information, valid geospatial coordinates, or authentic photographs cannot be part of the MAIN_AI_READY dataset:
+
+1. **REFERENCE_HISTORICAL Dataset (18,881 Properties):**
+   * **Cause of Non-Inclusion in Main:** Historical Kaggle and market datasets without genuine property photographs.
+   * **System Handling:** Retained cleanly in the database for analytical baseline and offline reference, but completely excluded by default from application property browsing (Property.is_main_ai_ready == False).
+2. **INVALID_QUARANTINE Dataset (34 Properties):**
+   * **Cause of Quarantine:** Source listing image assets failed retrieval / returned 404 or missing image paths on the source portal (e.g., placeholder path emptyProperty/3bhk.jpg or expired CDN tokens), preventing legitimate ResNet-18 feature extraction.
+   * **Integrity Enforcement:** In strict adherence to the zero-fabrication protocol, zero synthetic or AI-generated fallback images were injected. These 34 properties were quarantined with dataset_category = 'INVALID_QUARANTINE' and is_main_ai_ready = 0.
+3. **Chickpet Area Note:**
+   * Only 1 historical candidate was discovered for Chickpet in the source dataset, which lacked verifiable genuine property photos. Consistent with the rule that targets must reflect legitimate availability rather than fabrication, Chickpet holds 0 MAIN_AI_READY records.
+
+---
+
+## 8. Quality Assurance & System Verification Suite
+
+### A. Backend Pytest Verification
+* **Test Command:** python -m pytest tests/ -v
+* **Test Scope:** All 87 unit, integration, and endpoint tests across authentication, properties, valuation, image AI, and geospatial intelligence.
+* **Test Outcome:** **87 passed, 0 failed** in 34.99 seconds.
+
+### B. Frontend Production Build Verification
+* **Build Command:** 
+pm run build
+* **Compiler:** Vite v5.4.19 / Rollup
+* **Build Outcome:** Built in 15.45 seconds cleanly with **0 errors**.
+
+### C. Live API Endpoint Verification
+* **Endpoint /api/v1/properties:** Returns exclusively MAIN_AI_READY records (863 total).
+* **Locality Filtering (locality=Koramangala):** Returns 15 verified properties.
+* **Property Detail Endpoint (/api/v1/properties/{id}):** Delivers verified source metadata, genuine photo galleries, 512-D ResNet embeddings, Geoapify POI amenities, and SHAP feature importance attributions.
