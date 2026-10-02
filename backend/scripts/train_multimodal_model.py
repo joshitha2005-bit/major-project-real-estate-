@@ -114,10 +114,17 @@ def main():
     df = df_sample.reset_index(drop=True)
     print(f"Final training sample: {len(df)} properties across {df['locality'].nunique()} localities.")
 
-    # Calculate locality rate mapping
-    locality_medians = df.groupby('locality')['price_per_sqft'].median().to_dict()
+    # 1. Split first to prevent target leakage
+    indices = np.arange(len(df))
+    train_idx, test_idx = train_test_split(indices, test_size=0.2, random_state=42)
+    df_train = df.iloc[train_idx].copy()
+    df_test = df.iloc[test_idx].copy()
+    print(f"Split: {len(df_train)} train, {len(df_test)} test (random_state=42)")
+
+    # Calculate locality rate mapping STRICTLY on training split (No target leakage from test set)
+    locality_medians = df_train.groupby('locality')['price_per_sqft'].median().to_dict()
     locality_map = {loc: float(val) for loc, val in locality_medians.items()}
-    locality_map["Other"] = float(df['price_per_sqft'].median())
+    locality_map["Other"] = float(df_train['price_per_sqft'].median())
 
     # 2. Extract Geospatial features (with caching & live-geo option)
     print("\n[Step 2/6] Processing Geospatial features (Geoapify POIs)...")
@@ -244,8 +251,6 @@ def main():
 
     # 5. Ablation Study Comparison
     print("\n[Step 5/6] Executing Multimodal Ablation Study...")
-    indices = np.arange(len(df))
-    train_idx, test_idx = train_test_split(indices, test_size=0.2, random_state=42)
 
     y_train, y_test = y[train_idx], y[test_idx]
 

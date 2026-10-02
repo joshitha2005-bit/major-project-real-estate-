@@ -2,20 +2,29 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (C compiler, libpq, libgl for OpenCV, curl for healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
+    libgl1 \
+    libglib2.0-0 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-
+# Install python dependencies
+COPY backend/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app/ ./app/
-COPY alembic.ini .
-COPY alembic/ ./alembic/
+# Copy backend application, ML models, and SQLite database
+COPY backend/app/ ./app/
+COPY backend/models/ ./models/
+COPY backend/real_estate.db ./real_estate.db
+COPY backend/alembic.ini .
+COPY backend/alembic/ ./alembic/
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+  CMD curl -f http://localhost:8000/api/v1/properties/?limit=1 || exit 1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

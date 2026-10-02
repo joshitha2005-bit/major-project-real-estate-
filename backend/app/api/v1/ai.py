@@ -191,3 +191,43 @@ async def generate_pdf_report(
         }
     )
 
+
+
+from pydantic import BaseModel, Field
+
+class CustomPricePredictionRequest(BaseModel):
+    area_sqft: float = Field(..., gt=0, description="Area in square feet")
+    bhk: int = Field(default=2, ge=1, description="Number of bedrooms")
+    bathrooms: int = Field(default=2, ge=1)
+    balconies: int = Field(default=1, ge=0)
+    parking: int = Field(default=1, ge=0)
+    locality: str = Field(default="Whitefield")
+    property_age: float = Field(default=5.0, ge=0)
+    nearby_places: Optional[List[Any]] = Field(default=None)
+    description: Optional[str] = Field(default="")
+    image_url: Optional[str] = Field(default=None)
+    listed_price: Optional[float] = Field(default=None)
+
+
+@router.post("/predict-price", response_model=Dict[str, Any])
+async def predict_custom_price(
+    request: CustomPricePredictionRequest,
+    current_user: User = Depends(verify_pro_access)
+):
+    """Predict real estate price for custom user input using 544-D Multimodal XGBoost model."""
+    from app.services.multimodal_model_service import MultimodalModelService
+    
+    multimodal_res = MultimodalModelService.predict_property(
+        area_sqft=request.area_sqft,
+        bhk=request.bhk,
+        bathrooms=request.bathrooms,
+        balconies=request.balconies,
+        locality=request.locality,
+        property_age=request.property_age,
+        nearby_places=request.nearby_places or [],
+        description=request.description or "",
+        image_source=request.image_url,
+        listed_price=request.listed_price,
+        base_dir=BASE_DIR
+    )
+    return multimodal_res

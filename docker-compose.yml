@@ -1,44 +1,35 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: real_estate_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: real_estate_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   backend:
     build:
-      context: ../backend
-      dockerfile: ../docker/Dockerfile.backend
-    container_name: real_estate_backend
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: geosmart_backend
     restart: always
     environment:
-      DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/real_estate_db
-      JWT_SECRET: super-secret-key-real-estate-platform-2026-bangalore
-      GEOAPIFY_API_KEY: 7e57c95ce01147f38a78dab8029c635a
+      DATABASE_URL: sqlite:///./real_estate.db
+      JWT_SECRET: ${JWT_SECRET:-super-secret-key-geosmart-ai-2026}
+      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-b3a32f6b49eb40cbb1fb67a0e300bd73}
     ports:
       - "8000:8000"
-    depends_on:
-      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/properties/?limit=1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   frontend:
     build:
-      context: ../frontend
-      dockerfile: ../docker/Dockerfile.frontend
-    container_name: real_estate_frontend
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: /api/v1
+    container_name: geosmart_frontend
     restart: always
     ports:
       - "80:80"
     depends_on:
-      - backend
-
-volumes:
-  postgres_data:
+      backend:
+        condition: service_healthy

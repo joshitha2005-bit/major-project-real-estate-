@@ -135,7 +135,12 @@ class MultimodalModelService:
         counts = {c: 0 for c in GEO_CATEGORIES}
         if nearby_places and isinstance(nearby_places, list):
             for p in nearby_places:
-                cat = p.get("category", "")
+                if isinstance(p, dict):
+                    cat = p.get("category", "")
+                elif isinstance(p, str):
+                    cat = p
+                else:
+                    cat = ""
                 if cat in counts:
                     counts[cat] += 1
                 else:
