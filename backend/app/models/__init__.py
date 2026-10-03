@@ -7,3 +7,9 @@ from app.models.voice_callback import VoiceCallbackRequest, PropertyInquiry
 
 __all__ = ["User", "SearchHistory", "SavedLocation", "Property", "Subscription", "VoiceCallbackRequest", "PropertyInquiry"]
 
+
+from app.models.loan import BankLoanProduct, LoanCalculation, LoanComparisonReport
+__all__.extend(["BankLoanProduct", "LoanCalculation", "LoanComparisonReport"])
+
+from app.models.admin_lead import PrivateOwnerContact, AILead, SiteVisit, AdminAuditLog
+__all__.extend(["PrivateOwnerContact", "AILead", "SiteVisit", "AdminAuditLog"])

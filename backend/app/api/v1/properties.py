@@ -846,6 +846,11 @@ async def get_property_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Property not found"
         )
+    if getattr(prop, 'visibility_status', None) == 'PRIVATE':
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Property listing not found or is currently private."
+        )
         
     if not prop.nearby_places or len(prop.nearby_places) == 0:
         places = await GeoapifyService.get_nearby_places(lat=prop.latitude, lon=prop.longitude, radius_meters=5000)
@@ -872,6 +877,11 @@ async def get_property_navigation_routes(
     prop = db.query(Property).filter(Property.id == id).first()
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
+    
+    # Check if property is private - only authorized administrators may view
+    if getattr(prop, 'visibility_status', None) == 'PRIVATE':
+        # Default public users receive 404
+        raise HTTPException(status_code=404, detail="Property listing not found or is currently private.")
 
     dest_lat = prop.latitude
     dest_lon = prop.longitude

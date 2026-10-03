@@ -271,7 +271,32 @@ class ImageAIService:
                 "disclosure_note": "PROPERTY IMAGE NOT AVAILABLE"
             }
 
-        # 1b. SOURCE_LISTING_IMAGE Handling
+                # 1c. REPRESENTATIVE Handling (Reference only - never used as property visual evidence in production ResNet-18 inference)
+        if image_classification == "REPRESENTATIVE":
+            return {
+                "image_analysis_available": False,
+                "image_loaded": True,
+                "image_status": "REPRESENTATIVE_REFERENCE_ONLY",
+                "image_provenance": "REPRESENTATIVE",
+                "cnn_model": "PyTorch ResNet-18",
+                "cnn_status": "UNAVAILABLE_REPRESENTATIVE_ONLY",
+                "overall_condition": "UNAVAILABLE_REPRESENTATIVE_ONLY",
+                "overall_score": None,
+                "processed_count": 0,
+                "embedding_dimensions": None,
+                "embedding_norm": 0.0,
+                "non_zero_features": 0,
+                "embedding_sample": [],
+                "image_quality_score": None,
+                "sharpness_score": None,
+                "brightness_score": None,
+                "contrast_score": None,
+                "visual_features": {},
+                "usable_for_ai": False,
+                "disclosure_note": "Representative image — not actual property photograph. Visual evidence unavailable for multimodal prediction."
+            }
+
+# 1b. SOURCE_LISTING_IMAGE Handling
         if image_classification == "SOURCE_LISTING_IMAGE":
             return {
                 "image_analysis_available": False,

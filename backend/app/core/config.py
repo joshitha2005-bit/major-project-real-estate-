@@ -40,6 +40,31 @@ class Settings(BaseSettings):
     TWILIO_PHONE_NUMBER: str = os.getenv("TWILIO_PHONE_NUMBER", "")
     VOICE_PUBLIC_BASE_URL: str = os.getenv("VOICE_PUBLIC_BASE_URL", "http://localhost:8000")
 
+    # Razorpay Payment Gateway Configuration
+    RAZORPAY_KEY_ID: str = os.getenv("RAZORPAY_KEY_ID", "")
+    RAZORPAY_KEY_SECRET: str = os.getenv("RAZORPAY_KEY_SECRET", "")
+    RAZORPAY_WEBHOOK_SECRET: str = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
+    PROPULSE_PRO_AMOUNT_PAISE: int = 29900  # ₹299.00 = 29900 paise
+    PROPULSE_PRO_CURRENCY: str = "INR"
+
+    @property
+    def is_razorpay_configured(self) -> bool:
+        """Check if real Razorpay credentials are provided."""
+        key_id = (self.RAZORPAY_KEY_ID or "").strip()
+        key_secret = (self.RAZORPAY_KEY_SECRET or "").strip()
+        return bool(
+            key_id and key_secret and 
+            not key_id.startswith("rzp_test_placeholder") and
+            len(key_id) >= 10 and len(key_secret) >= 10
+        )
+
+    # Private Admin Configuration (Environment-driven, never hardcoded in client)
+    PRIVATE_ADMIN_EMAIL: str = os.getenv("PRIVATE_ADMIN_EMAIL", "admin@geosmart.ai")
+    PRIVATE_ADMIN_PHONE: str = os.getenv("PRIVATE_ADMIN_PHONE", "+91 99880 12345")
+    PRIVATE_ADMIN_PASSWORD: str = os.getenv("PRIVATE_ADMIN_PASSWORD", "GeoSmartAdmin@2026")
+    AUTO_SEND_HIGH_CONFIDENCE_LEADS: bool = os.getenv("AUTO_SEND_HIGH_CONFIDENCE_LEADS", "false").lower() in ("true", "1")
+    OWNER_NOTIFICATION_PROVIDER: str = os.getenv("OWNER_NOTIFICATION_PROVIDER", "")  # e.g. "", "EMAIL", "SMS", "WHATSAPP"
+
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",

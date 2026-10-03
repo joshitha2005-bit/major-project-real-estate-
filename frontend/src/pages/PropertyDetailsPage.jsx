@@ -1,14 +1,17 @@
+import HomeLoanPlanner from "../components/loans/HomeLoanPlanner";
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { propertyService } from '../services/propertyService';
 import { aiService } from '../services/aiService';
 import { locationService } from '../services/locationService';
 import { useAuth } from '../context/AuthContext';
+import { ProFeatureLockModal } from '../components/ProFeatureLockModal';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { MapView } from '../components/MapView';
 import { NearbyPlacesList } from '../components/NearbyPlacesList';
 import { 
+  Calculator,
   Building2, MapPin, ArrowLeft, Loader2, Phone, 
   Shield, CheckCircle2, Sparkles, Download, Brain, User, MessageSquare, X, 
   ThumbsUp, ThumbsDown, Heart, Info, AlertTriangle, AlertCircle, 
@@ -58,10 +61,15 @@ export const PropertyDetailsPage = () => {
   const [showReliabilityTooltip, setShowReliabilityTooltip] = useState(false);
 
   const { user } = useAuth();
+  const isPro = user?.role === 'ADMIN' || user?.subscription_status === 'ACTIVE';
+  const [showProLockModal, setShowProLockModal] = useState(false);
+  const [proLockFeature, setProLockFeature] = useState('Premium AI Intelligence');
   const [revealedContact, setRevealedContact] = useState(null);
   const [revealLoading, setRevealLoading] = useState(false);
   const [revealError, setRevealError] = useState('');
   const [proAccessDenied, setProAccessDenied] = useState(false);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const int = (val) => Math.round(Number(val) || 0);
 
   // Live Navigation & Multi-Modal Routing State
   const [routesData, setRoutesData] = useState(null);
@@ -176,6 +184,7 @@ export const PropertyDetailsPage = () => {
 
   // AI Voice Assistant State & Handlers
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showLoanPlanner, setShowLoanPlanner] = useState(false);
   const [voicePhone, setVoicePhone] = useState('');
   const [voiceConsent, setVoiceConsent] = useState(false);
   const [voiceLoading, setVoiceLoading] = useState(false);
@@ -184,6 +193,12 @@ export const PropertyDetailsPage = () => {
 
   const handleRequestVoiceCallback = async (e) => {
     e.preventDefault();
+    if (!isPro) {
+      setShowVoiceModal(false);
+      setProLockFeature("AI Voice Telephone Assistant");
+      setShowProLockModal(true);
+      return;
+    }
     if (!voiceConsent) {
       setVoiceError('Please agree to receive an automated AI call.');
       return;
@@ -199,7 +214,13 @@ export const PropertyDetailsPage = () => {
       setVoiceSession(data);
     } catch (err) {
       console.error(err);
-      setVoiceError(err.response?.data?.detail || err.message || 'Failed to request AI voice callback.');
+      if (err.response?.status === 403) {
+        setShowVoiceModal(false);
+        setProLockFeature("AI Voice Telephone Assistant");
+        setShowProLockModal(true);
+      } else {
+        setVoiceError(err.response?.data?.detail || err.message || 'Failed to request AI voice callback.');
+      }
     } finally {
       setVoiceLoading(false);
     }
@@ -250,10 +271,12 @@ export const PropertyDetailsPage = () => {
 
     const fetchPropertyAndAi = async () => {
       setLoading(true);
+      setLoadingAnalytics(true);
       setProAccessDenied(false);
       try {
         const propData = await propertyService.getPropertyById(id);
         setProperty(propData);
+        setLoading(false); // Property details render immediately!
         
         try {
           const aiData = await aiService.analyzeProperty(id);
@@ -265,12 +288,14 @@ export const PropertyDetailsPage = () => {
           } else {
             console.error("Non-403 AI fetch error:", aiErr);
           }
+        } finally {
+          setLoadingAnalytics(false);
         }
       } catch (err) {
         console.error("Failed to load property details:", err);
         setErrorMsg("Property listing could not be found or has been removed.");
-      } finally {
         setLoading(false);
+        setLoadingAnalytics(false);
       }
     };
 
@@ -338,6 +363,11 @@ export const PropertyDetailsPage = () => {
   };
 
   const handleDownloadPdf = async () => {
+    if (!isPro) {
+      setProLockFeature("AI Multimodal Property Intelligence Report");
+      setShowProLockModal(true);
+      return;
+    }
     setDownloadingPdf(true);
     try {
       await aiService.downloadPdfReport(id);
@@ -382,7 +412,15 @@ export const PropertyDetailsPage = () => {
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Property Listings</span>
           </Link>
-        </main>
+          {/* SMART HOME LOAN & BANK COMPARISON MODULE */}
+        <div id="home-loan-planner-section" className="pt-6">
+          <HomeLoanPlanner
+            property={property}
+            onClose={() => setShowLoanPlanner(false)}
+          />
+        </div>
+
+      </main>
         <Footer />
       </div>
     );
@@ -408,7 +446,7 @@ export const PropertyDetailsPage = () => {
     const parts = [];
     if (pred) {
       parts.push(
-        `AI Valuation: The XGBoost predictive engine estimates a market value of ${property.price_formatted || `₹${int(pred.predicted_selling_price).toLocaleString()}`} based on local supply trends and the property's ${property.bhk} BHK layout.`
+        `AI Valuation: The XGBoost predictive engine estimates a market value of ${property.price_formatted || (pred.predicted_selling_price ? `₹${int(pred.predicted_selling_price).toLocaleString('en-IN')}` : '')} based on local supply trends and the property's ${property.bhk} BHK layout.`
       );
     }
     if (cv) {
@@ -558,9 +596,32 @@ export const PropertyDetailsPage = () => {
               <span>{isSavedProperty ? 'Saved in Watchlist' : 'Save Property'}</span>
             </button>
 
+                        {/* Plan My Home Loan Action Button */}
+            <button
+              id="plan-home-loan-btn"
+              onClick={() => {
+                setShowLoanPlanner(true);
+                setTimeout(() => {
+                  const el = document.getElementById('home-loan-planner-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all duration-300 flex items-center gap-2"
+            >
+              <Calculator className="w-4 h-4 text-emerald-200" />
+              <span>🏦 Plan My Home Loan</span>
+            </button>
+
             {/* Contact Owner with AI Button */}
             <button
-              onClick={() => setShowVoiceModal(true)}
+              onClick={() => {
+                if (!isPro) {
+                  setProLockFeature("AI Voice Telephone Assistant");
+                  setShowProLockModal(true);
+                  return;
+                }
+                setShowVoiceModal(true);
+              }}
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all duration-300 flex items-center gap-2"
             >
               <Phone className="w-4 h-4 text-purple-200" />
@@ -2129,7 +2190,23 @@ export const PropertyDetailsPage = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
-              {/* Contact Owner with AI Button */}
+                          {/* Plan My Home Loan Action Button */}
+            <button
+              id="plan-home-loan-btn"
+              onClick={() => {
+                setShowLoanPlanner(true);
+                setTimeout(() => {
+                  const el = document.getElementById('home-loan-planner-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all duration-300 flex items-center gap-2"
+            >
+              <Calculator className="w-4 h-4 text-emerald-200" />
+              <span>🏦 Plan My Home Loan</span>
+            </button>
+
+            {/* Contact Owner with AI Button */}
               <button
                 onClick={() => setShowVoiceModal(true)}
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/25"
@@ -2163,6 +2240,14 @@ export const PropertyDetailsPage = () => {
               ) : null}
             </div>
           </div>
+        </div>
+
+        {/* SMART HOME LOAN & BANK COMPARISON MODULE */}
+        <div id="home-loan-planner-section" className="pt-6">
+          <HomeLoanPlanner
+            property={property}
+            onClose={() => setShowLoanPlanner(false)}
+          />
         </div>
 
       </main>
@@ -2330,6 +2415,46 @@ export const PropertyDetailsPage = () => {
                   )}
                 </button>
               </form>
+            ) : voiceSession.status === 'TELEPHONY_NOT_CONFIGURED' ? (
+              <div className="space-y-4 py-2">
+                <div className="p-4 rounded-2xl bg-amber-950/20 border border-amber-500/30 text-left space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center justify-center flex-shrink-0">
+                      <AlertTriangle className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-bold text-white">Telephony Not Configured</h5>
+                      <span className="text-[10px] text-amber-300/90 font-mono">TELEPHONY_NOT_CONFIGURED</span>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {voiceSession.message || "Twilio credentials are not configured on the server. Your callback request and lead information have been registered in the private database for admin review. No simulated call was placed."}
+                  </p>
+
+                  {/* Truthful Diagnostic Breakdown */}
+                  <div className="p-3 rounded-xl bg-slate-950/90 border border-slate-800 text-[11px] font-mono space-y-1.5 text-slate-400">
+                    <div className="flex justify-between">
+                      <span>Twilio Configured:</span>
+                      <span className="text-rose-400 font-bold">NO</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Twilio API Request:</span>
+                      <span className="text-rose-400 font-bold">NO</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Call SID:</span>
+                      <span className="text-slate-500 font-bold">None (Zero fake calls)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Public Webhook:</span>
+                      <span className={voiceSession.diagnostics?.public_webhook_configured ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                        {voiceSession.diagnostics?.public_webhook_configured ? "Configured (HTTPS)" : "Localhost / Unreachable"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
               <div className="space-y-4 py-2">
                 <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 text-center space-y-3">
@@ -2338,34 +2463,37 @@ export const PropertyDetailsPage = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-white">Your AI callback has been requested.</p>
+                    <p className="text-sm font-bold text-white">Real AI telephone call initiated via Twilio</p>
                     <p className="text-xs text-slate-400 font-mono">Calling {voiceSession.phone_number}...</p>
+                    {voiceSession.call_sid && (
+                      <p className="text-[10px] text-purple-300 font-mono">Call SID: {voiceSession.call_sid}</p>
+                    )}
                   </div>
 
                   {/* Call Status Stepper */}
                   <div className="grid grid-cols-3 gap-2 pt-2 text-[10px] font-mono">
                     <div className={`p-2 rounded-xl border text-center ${
-                      voiceSession.status === 'calling'
+                      ['calling', 'CALLING', 'queued', 'initiated'].includes(voiceSession.status)
                         ? 'bg-purple-500/20 border-purple-500 text-purple-300 font-bold'
                         : 'bg-slate-900 border-slate-800 text-slate-500'
                     }`}>
                       Calling
                     </div>
                     <div className={`p-2 rounded-xl border text-center ${
-                      voiceSession.status === 'connected'
+                      ['connected', 'CONNECTED', 'in-progress', 'answered'].includes(voiceSession.status)
                         ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold animate-pulse'
                         : 'bg-slate-900 border-slate-800 text-slate-500'
                     }`}>
                       Connected
                     </div>
                     <div className={`p-2 rounded-xl border text-center ${
-                      voiceSession.status === 'completed'
+                      ['completed', 'COMPLETED'].includes(voiceSession.status)
                         ? 'bg-blue-500/20 border-blue-500 text-blue-300 font-bold'
-                        : voiceSession.status === 'failed'
+                        : ['failed', 'FAILED', 'CALL_FAILED'].includes(voiceSession.status)
                           ? 'bg-rose-500/20 border-rose-500 text-rose-300 font-bold'
                           : 'bg-slate-900 border-slate-800 text-slate-500'
                     }`}>
-                      {voiceSession.status === 'failed' ? 'Failed' : 'Completed'}
+                      {['failed', 'FAILED', 'CALL_FAILED'].includes(voiceSession.status) ? 'Failed' : 'Completed'}
                     </div>
                   </div>
                 </div>
@@ -2398,6 +2526,12 @@ export const PropertyDetailsPage = () => {
           </div>
         </div>
       )}
+
+      <ProFeatureLockModal
+        isOpen={showProLockModal}
+        onClose={() => setShowProLockModal(false)}
+        featureName={proLockFeature}
+      />
 
       <Footer />
     </div>

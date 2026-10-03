@@ -12,6 +12,8 @@ import { PropertyListingsPage } from './pages/PropertyListingsPage';
 import { AiDashboardPage } from './pages/AiDashboardPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
 import { ListPropertyPage } from './pages/ListPropertyPage';
+import { PrivateAdminLoginPage } from './pages/admin/PrivateAdminLoginPage';
+import { PrivateAdminDashboard } from './pages/admin/PrivateAdminDashboard';
 
 function App() {
 
@@ -78,6 +80,10 @@ function App() {
           />
 
           
+          {/* Separate Private Administrator System (Strictly Protected - Not in Public Navbar) */}
+          <Route path="/admin/login" element={<PrivateAdminLoginPage />} />
+          <Route path="/admin/private" element={<PrivateAdminDashboard />} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

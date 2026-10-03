@@ -22,11 +22,13 @@ from fastapi import WebSocket, WebSocketDisconnect, HTTPException, status
 from app.core.config import settings
 from app.models.property import Property
 from app.models.voice_callback import VoiceCallbackRequest, PropertyInquiry
+from app.models.admin_lead import AILead, SiteVisit, PrivateOwnerContact
 from app.services.price_prediction_service import PricePredictionService
 from app.services.safety_service import SafetyGuardService
 from app.services.text_ai_service import TextAIService
 from app.services.image_ai_service import ImageAIService
 from app.services.image_provenance import ImageProvenanceService
+from app.services.voice_conversation_engine import VoiceConversationEngine, VoiceConversationSession
 
 
 class VoiceAssistantService:
@@ -69,124 +71,122 @@ class VoiceAssistantService:
             )
 
     @classmethod
+    def get_telephony_diagnostics(cls) -> Dict[str, Any]:
+        """
+        Return comprehensive diagnostic information regarding Twilio telephony and webhook reachability.
+        Never exposes sensitive tokens.
+        """
+        from dotenv import dotenv_values
+        env_file = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
+        env_vals = dotenv_values(env_file) if os.path.exists(env_file) else {}
+
+        # Prefer settings if set or explicitly patched, fallback to .env/os.environ
+        if hasattr(settings, "TWILIO_ACCOUNT_SID"):
+            twilio_sid = settings.TWILIO_ACCOUNT_SID.strip() if settings.TWILIO_ACCOUNT_SID is not None else ""
+        else:
+            twilio_sid = (env_vals.get("TWILIO_ACCOUNT_SID") or os.getenv("TWILIO_ACCOUNT_SID") or "").strip()
+
+        if hasattr(settings, "TWILIO_AUTH_TOKEN"):
+            twilio_token = settings.TWILIO_AUTH_TOKEN.strip() if settings.TWILIO_AUTH_TOKEN is not None else ""
+        else:
+            twilio_token = (env_vals.get("TWILIO_AUTH_TOKEN") or os.getenv("TWILIO_AUTH_TOKEN") or "").strip()
+
+        if hasattr(settings, "TWILIO_PHONE_NUMBER"):
+            twilio_from = settings.TWILIO_PHONE_NUMBER.strip() if settings.TWILIO_PHONE_NUMBER is not None else ""
+        else:
+            twilio_from = (env_vals.get("TWILIO_PHONE_NUMBER") or os.getenv("TWILIO_PHONE_NUMBER") or "").strip()
+
+        if hasattr(settings, "VOICE_PUBLIC_BASE_URL") and settings.VOICE_PUBLIC_BASE_URL:
+            base_url = settings.VOICE_PUBLIC_BASE_URL.strip().rstrip('/')
+        else:
+            base_url = (env_vals.get("VOICE_PUBLIC_BASE_URL") or os.getenv("VOICE_PUBLIC_BASE_URL") or "").strip().rstrip('/')
+
+        is_twilio_configured = bool(
+            twilio_sid and twilio_token and twilio_from and
+            twilio_sid.startswith("AC") and len(twilio_sid) >= 30
+        )
+        
+        # Check if base_url is public HTTPS
+        is_public_webhook = bool(
+            base_url and
+            base_url.startswith("https://") and
+            not ("localhost" in base_url or "127.0.0.1" in base_url or "0.0.0.0" in base_url)
+        )
+
+        masked_phone = None
+        if twilio_from:
+            cleaned = re.sub(r'\s+', '', twilio_from)
+            if len(cleaned) > 4:
+                masked_phone = f"{cleaned[:3]}****{cleaned[-4:]}"
+            else:
+                masked_phone = "***"
+
+        gemini_key = (os.getenv("GEMINI_API_KEY") or settings.GEMINI_API_KEY or "").strip()
+        if not gemini_key:
+            from dotenv import dotenv_values
+            env_file = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
+            if os.path.exists(env_file):
+                gemini_key = (dotenv_values(env_file).get("GEMINI_API_KEY") or "").strip()
+        has_gemini = bool(gemini_key and len(gemini_key) >= 10)
+
+        return {
+            "twilio_configured": is_twilio_configured,
+            "twilio_account_sid_present": bool(twilio_sid),
+            "twilio_auth_token_present": bool(twilio_token),
+            "twilio_phone_number_present": bool(twilio_from),
+            "twilio_phone_masked": masked_phone,
+            "public_webhook_configured": is_public_webhook,
+            "webhook_base_url": base_url,
+            "uses_localhost": "localhost" in base_url or "127.0.0.1" in base_url,
+            "gemini_configured": has_gemini,
+            "ready_for_real_calls": is_twilio_configured and is_public_webhook
+        }
+
+    @classmethod
     def build_property_knowledge_context(cls, prop: Property, db: Session) -> str:
         """
-        Compile truthful, verified property attributes into a structured knowledge base
-        for the Gemini AI Property Assistant.
+        Compile truthful, verified property attributes into a structured knowledge base.
         Never fabricates information or owner details.
         """
-        # Price formatting
-        price_lakhs = round(prop.price / 100_000.0, 2)
-        price_str = f"₹{price_lakhs} Lakh" if price_lakhs < 100 else f"₹{round(prop.price / 10_000_000.0, 2)} Crore"
-        rate_str = f"₹{int(prop.price / (prop.area_sqft or 1)):,} / sq.ft"
-
-        # AI Valuation Prediction
-        pred_val_str = "Unavailable"
-        rent_val_str = "Unavailable"
-        try:
-            pred = PricePredictionService.predict_property_valuation(
-                address=prop.address,
-                lat=prop.latitude,
-                lon=prop.longitude,
-                area_sqft=prop.area_sqft,
-                bhk=prop.bhk,
-                bathrooms=prop.bathrooms,
-                balconies=prop.balconies,
-                parking=prop.parking,
-                facing=prop.facing,
-                property_age=prop.property_age,
-                nearby_places=prop.nearby_places or [],
-                image_score=80.0,
-                text_score=75.0,
-                listed_price=prop.price
-            )
-            if pred:
-                pred_price = pred.get("predicted_selling_price")
-                if pred_price:
-                    p_lakhs = round(pred_price / 100_000.0, 2)
-                    pred_val_str = f"₹{p_lakhs} Lakh" if p_lakhs < 100 else f"₹{round(pred_price / 10_000_000.0, 2)} Crore"
-                rent_price = pred.get("estimated_rental_price")
-                if rent_price:
-                    rent_val_str = f"₹{int(rent_price):,} / month"
-        except Exception as e:
-            print(f"Warning building AI prediction context for voice: {e}")
-
-        # Image Intelligence Info
-        image_info_str = "Property photos unavailable."
-        try:
-            prov = ImageProvenanceService.get_property_image_provenance(prop)
-            if prov.get("image_classification") == "AUTHORIZED_PROPERTY_IMAGE":
-                image_info_str = "Verified authentic property photos available. PyTorch ResNet-18 extracted 512-dim visual features."
-            elif prov.get("image_classification") == "SOURCE_LISTING_IMAGE":
-                image_info_str = "Reference photos available on source listing portal (NoBroker/Housing)."
-            elif prov.get("image_classification") == "LOCATION_BUILDING_REFERENCE":
-                image_info_str = "Building and locality exterior reference photos available."
-        except Exception:
-            pass
-
-        # Description NLP Info
-        desc_text = prop.description or "No descriptive text provided in the listing record."
-
-        # Nearby Facilities
-        nearby_hospitals = "Nearest hospital data not recorded."
-        nearby_police = "Nearest police station data not recorded."
-        safety_score = "Safety rating unavailable"
-        if prop.nearby_places and isinstance(prop.nearby_places, list):
-            hosps = [p for p in prop.nearby_places if p.get("category") == "Hospitals"]
-            if hosps:
-                h = hosps[0]
-                nearby_hospitals = f"{h.get('name', 'Hospital')} ({round(h.get('distance_meters', 0)/1000.0, 2)} km away)"
-            police = [p for p in prop.nearby_places if p.get("category") == "Police Stations"]
-            if police:
-                pol = police[0]
-                nearby_police = f"{pol.get('name', 'Police Station')} ({round(pol.get('distance_meters', 0)/1000.0, 2)} km away)"
-
-        amenities_str = ", ".join(prop.amenities) if prop.amenities else "Standard amenities"
+        ctx_dict = VoiceConversationEngine.build_property_context(prop, db)
+        
+        desc_text = (prop.description or "Prime residential listing in Bengaluru.").replace("\n", " ").strip()
+        if len(desc_text) > 300:
+            desc_text = desc_text[:300] + "..."
 
         context = f"""
 PROPERTY SPECIFICATIONS:
 - Property ID: BLR-{prop.id}
-- Title: {prop.title}
-- Locality: {prop.locality or 'Bengaluru'}, Bengaluru, Karnataka
-- Full Address: {prop.address}
-- Layout & Type: {prop.bhk} BHK {prop.property_type or 'Apartment'}
-- Built-up Area: {prop.area_sqft} sq.ft.
-- Floor: Floor {prop.floor} of {prop.total_floors}
-- Bathrooms: {prop.bathrooms}, Balconies: {prop.balconies}
-- Facing Direction: {prop.facing or 'Not specified'}
-- Furnishing Status: {prop.furnishing or 'Semi-Furnished'}
-- Parking: {prop.parking or 'Available'}
-- Property Age: {prop.property_age or 'New'}
-- Listed Asking Price: {price_str} ({rate_str})
-- Model Predicted Price: {pred_val_str}
-- Estimated Monthly Rental Forecast: {rent_val_str}
-- Available Amenities: {amenities_str}
-- Nearby Hospital: {nearby_hospitals}
-- Nearby Police Station: {nearby_police}
-- Visual Media Status: {image_info_str}
+- Title: {ctx_dict['title']}
+- Locality: {ctx_dict['locality']}, Bengaluru, Karnataka
+- Full Address: {ctx_dict['address']}
+- Layout & Type: {ctx_dict['bhk_str']} {ctx_dict['property_type']}
+- Built-up Area: {ctx_dict['area_sqft']} sq.ft.
+- Parking: {ctx_dict['parking']}
+- Facing Direction: {ctx_dict['facing']}
+- Furnishing Status: {ctx_dict['furnishing']}
+- Listed Asking Price: {ctx_dict['price_formatted']}
+- Available Amenities: {ctx_dict['amenities']}
 - Listing Description: {desc_text}
 """
         return context.strip()
 
     @classmethod
     def get_system_instruction(cls, property_context: str) -> str:
-        """Generate authoritative system instructions for Gemini Live voice session."""
+        """Generate authoritative system instructions for AI voice session."""
         return f"""You are an AI property assistant for the Cloud-Based Real Estate Analysis platform.
-
 You are NOT the property owner.
-
 You are assisting a user on a live telephone call who is asking questions about one specific property.
-
 Use ONLY the verified property information supplied below.
 
 CRITICAL RULES:
 1. Never invent property details, prices, amenities, distances, availability, owner information, or negotiation terms.
 2. If information is unavailable, clearly state: "I don't have that information available for this property."
-3. Keep spoken answers short, natural, courteous, and conversational (1 to 3 sentences maximum per turn).
-4. If the user asks whether the price is negotiable, do not assume that it is. State that negotiation must be confirmed by the owner or agent.
-5. If the user asks to speak with the owner or have the owner contact them, inform them that you are an AI assistant and you have recorded their request for the owner or listing agent to follow up.
-6. Always identify yourself as an AI assistant when greeting or when asked.
-7. Speak clearly and concisely in standard professional Indian English.
+3. Keep spoken answers short, natural, courteous, and conversational (1 to 2 sentences maximum per turn).
+4. If the user asks whether the price is negotiable, state that negotiation must be confirmed directly with the owner or listing agent.
+5. If the user gives unrelated or nonsensical speech, politely clarify without inferring answers.
+6. Ask whether they would like to schedule an in-person site visit.
+7. Always identify yourself as an AI assistant.
 
 ==================================================
 VERIFIED PROPERTY KNOWLEDGE BASE:
@@ -203,7 +203,9 @@ VERIFIED PROPERTY KNOWLEDGE BASE:
         db: Session
     ) -> Dict[str, Any]:
         """
-        Validate, create callback record, and initiate outbound phone call via Twilio.
+        Validate, create callback record, and initiate REAL outbound telephone call via Twilio.
+        STRICT: Never simulates fake Call SIDs or fake success.
+        If Twilio credentials are missing or invalid, truthfully returns TELEPHONY_NOT_CONFIGURED.
         """
         # 1. Validate property existence
         prop = db.query(Property).filter(Property.id == property_id).first()
@@ -222,13 +224,20 @@ VERIFIED PROPERTY KNOWLEDGE BASE:
         # 4. Generate unique session ID
         session_id = f"vcs_{uuid.uuid4().hex[:16]}"
 
-        # 5. Create database record
+        # 5. Check telephony configuration diagnostics
+        diag = cls.get_telephony_diagnostics()
+        is_twilio_configured = diag["twilio_configured"]
+        is_public_webhook = diag.get("public_webhook_configured", not diag.get("uses_localhost", False))
+        base_url = diag.get("webhook_base_url", diag.get("webhook_url", ""))
+
+        # 6. Create database record
         callback_req = VoiceCallbackRequest(
             property_id=property_id,
             user_id=user_id,
             phone_number=formatted_phone,
             session_id=session_id,
-            status="calling",
+            status="requested",
+            call_sid=None,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc)
         )
@@ -236,144 +245,201 @@ VERIFIED PROPERTY KNOWLEDGE BASE:
         db.commit()
         db.refresh(callback_req)
 
-        # 6. Twilio Call Initiation
-        twilio_sid = settings.TWILIO_ACCOUNT_SID
-        twilio_token = settings.TWILIO_AUTH_TOKEN
-        twilio_from = settings.TWILIO_PHONE_NUMBER
-        base_url = settings.VOICE_PUBLIC_BASE_URL.rstrip('/')
-
-        call_initiated = False
-        call_sid = None
-
-        if twilio_sid and twilio_token and twilio_from:
-            try:
-                from twilio.rest import Client
-                client = Client(twilio_sid, twilio_token)
-                
-                twiml_url = f"{base_url}/api/v1/voice-assistant/twiml/{session_id}"
-                status_callback_url = f"{base_url}/api/v1/voice-assistant/status-callback/{session_id}"
-
-                call = client.calls.create(
-                    to=formatted_phone,
-                    from_=twilio_from,
-                    url=twiml_url,
-                    status_callback=status_callback_url,
-                    status_callback_event=['initiated', 'ringing', 'answered', 'completed']
-                )
-                call_sid = call.sid
-                call_initiated = True
-                callback_req.call_sid = call_sid
-                db.commit()
-            except Exception as twilio_err:
-                print(f"Twilio call dispatch warning: {twilio_err}")
-                callback_req.error_message = str(twilio_err)
-                db.commit()
-        else:
-            # Simulated development mode when live credentials are not yet supplied
-            call_sid = f"SIM_{uuid.uuid4().hex[:12]}"
-            call_initiated = True
-            callback_req.call_sid = call_sid
-            callback_req.status = "calling"
+        # If Twilio is NOT configured: TRUTHFULLY return TELEPHONY_NOT_CONFIGURED (NO FAKE CALL SID)
+        if not is_twilio_configured:
+            callback_req.status = "telephony_not_configured"
+            callback_req.error_message = (
+                "Telephony not configured: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, or TWILIO_PHONE_NUMBER "
+                "is missing or invalid in server environment."
+            )
             db.commit()
 
-        return {
-            "success": True,
-            "session_id": session_id,
-            "call_sid": call_sid,
-            "status": "calling",
-            "message": "Your AI callback has been requested. Connecting to your phone...",
-            "phone_number": formatted_phone,
-            "property_id": property_id,
-            "property_title": prop.title
-        }
+            return {
+                "success": False,
+                "status": "TELEPHONY_NOT_CONFIGURED",
+                "message": (
+                    "Telephony provider is not configured. Real outbound telephone calls require active Twilio credentials. "
+                    "No simulated call was placed."
+                ),
+                "diagnostics": {
+                    "twilio_configured": False,
+                    "twilio_api_request": False,
+                    "call_sid": None,
+                    "call_status": "TELEPHONY_NOT_CONFIGURED",
+                    "public_webhook_configured": is_public_webhook,
+                    "webhook_base_url": base_url,
+                    "failure_code": "TELEPHONY_NOT_CONFIGURED",
+                    "failure_message": "Twilio credentials not configured in server environment."
+                },
+                "session_id": session_id,
+                "call_sid": None,
+                "phone_number": formatted_phone,
+                "property_id": property_id,
+                "property_title": prop.title
+            }
+
+        # Twilio is configured: Attempt real Twilio REST API outbound call
+        twilio_sid = settings.TWILIO_ACCOUNT_SID.strip()
+        twilio_token = settings.TWILIO_AUTH_TOKEN.strip()
+        twilio_from = settings.TWILIO_PHONE_NUMBER.strip()
+
+        try:
+            from twilio.rest import Client
+            client = Client(twilio_sid, twilio_token)
+
+            twiml_url = f"{base_url}/api/v1/voice-assistant/twiml/{session_id}"
+            status_callback_url = f"{base_url}/api/v1/voice-assistant/status-callback/{session_id}"
+
+            call = client.calls.create(
+                to=formatted_phone,
+                from_=twilio_from,
+                url=twiml_url,
+                status_callback=status_callback_url,
+                status_callback_event=['initiated', 'ringing', 'answered', 'completed']
+            )
+
+            call_sid = call.sid
+            callback_req.call_sid = call_sid
+            callback_req.status = "calling"
+            callback_req.call_started_at = datetime.now(timezone.utc)
+            db.commit()
+
+            return {
+                "success": True,
+                "status": "CALLING",
+                "message": f"Real outbound call initiated via Twilio to {formatted_phone}. Your phone will ring shortly.",
+                "diagnostics": {
+                    "twilio_configured": True,
+                    "twilio_api_request": True,
+                    "call_sid": call_sid,
+                    "call_status": (call.status or "CALLING").upper(),
+                    "public_webhook_configured": is_public_webhook,
+                    "webhook_base_url": base_url,
+                    "failure_code": None,
+                    "failure_message": None
+                },
+                "session_id": session_id,
+                "call_sid": call_sid,
+                "phone_number": formatted_phone,
+                "property_id": property_id,
+                "property_title": prop.title
+            }
+
+        except Exception as twilio_err:
+            error_text = str(twilio_err)
+            callback_req.status = "failed"
+            callback_req.error_message = error_text
+            db.commit()
+
+            failure_code = getattr(twilio_err, "code", "TWILIO_DISPATCH_ERROR")
+
+            return {
+                "success": False,
+                "status": "CALL_FAILED",
+                "message": f"Twilio API request failed: {error_text}",
+                "diagnostics": {
+                    "twilio_configured": True,
+                    "twilio_api_request": True,
+                    "call_sid": None,
+                    "call_status": "FAILED",
+                    "public_webhook_configured": is_public_webhook,
+                    "webhook_base_url": base_url,
+                    "failure_code": str(failure_code),
+                    "failure_message": error_text
+                },
+                "session_id": session_id,
+                "call_sid": None,
+                "phone_number": formatted_phone,
+                "property_id": property_id,
+                "property_title": prop.title
+            }
+
+    @staticmethod
+    def generate_gather_twiml(session_id: str, spoken_text: str, is_first: bool = False) -> str:
+        """
+        Generate TwiML XML instructing Twilio to speak the AI response and gather the user's speech.
+        """
+        base_url = settings.VOICE_PUBLIC_BASE_URL.rstrip('/')
+        action_url = f"{base_url}/api/v1/voice-assistant/twiml-gather/{session_id}"
+
+        # Clean text for XML safe content
+        clean_text = spoken_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Gather input="speech" action="{action_url}" method="POST" speechTimeout="auto" timeout="4" language="en-IN">
+        <Say voice="Polly.Aditi">{clean_text}</Say>
+    </Gather>
+    <Say voice="Polly.Aditi">I didn't receive a response. Our team will follow up with you. Have a great day!</Say>
+    <Hangup/>
+</Response>"""
+
+    @staticmethod
+    def generate_hangup_twiml(closing_text: str) -> str:
+        """Generate final concluding TwiML XML with factual summary and hangup."""
+        clean_text = closing_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Say voice="Polly.Aditi">{clean_text}</Say>
+    <Hangup/>
+</Response>"""
 
     @staticmethod
     def generate_twiml_xml(session_id: str) -> str:
-        """Generate TwiML XML instructing Twilio to bridge the call to WebSocket media stream."""
+        """Generate TwiML XML for media stream bridge if WebSocket mode is used."""
         base_url = settings.VOICE_PUBLIC_BASE_URL.rstrip('/')
-        # Convert http/https to ws/wss
         ws_url = base_url.replace("https://", "wss://").replace("http://", "ws://")
         stream_url = f"{ws_url}/api/v1/voice-assistant/stream/{session_id}"
 
         return f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Google.en-IN-Wavenet-D">Connecting you to the PropPulse AI Property Assistant.</Say>
+    <Say voice="Polly.Aditi">Connecting you to the AI Property Assistant.</Say>
     <Connect>
-        <Stream url="{stream_url}">
-            <Parameter name="session_id" value="{session_id}" />
-        </Stream>
+        <Stream url="{stream_url}" />
     </Connect>
-</Response>
-"""
-
-    # =========================================================================
-    # AUDIO CONVERSION UTILITIES (Twilio mulaw 8kHz <-> Gemini PCM 16/24kHz)
-    # =========================================================================
+</Response>"""
 
     @staticmethod
-    def mulaw_to_pcm16(mulaw_chunk: bytes) -> bytes:
-        """Convert Twilio 8kHz 8-bit mulaw audio to 16kHz 16-bit linear PCM for Gemini Live."""
+    def mulaw_to_pcm16(mulaw_bytes: bytes, in_rate: int = 8000, out_rate: int = 16000) -> bytes:
         if not audioop:
-            return mulaw_chunk
-        try:
-            pcm_8k = audioop.ulaw2lin(mulaw_chunk, 2)
-            pcm_16k, _ = audioop.ratecv(pcm_8k, 2, 1, 8000, 16000, None)
-            return pcm_16k
-        except Exception:
-            return mulaw_chunk
+            return mulaw_bytes
+        pcm_data = audioop.ulaw2lin(mulaw_bytes, 2)
+        if in_rate != out_rate:
+            pcm_data, _ = audioop.ratecv(pcm_data, 2, 1, in_rate, out_rate, None)
+        return pcm_data
 
     @staticmethod
-    def pcm_to_mulaw(pcm_chunk: bytes, in_rate: int = 24000) -> bytes:
-        """Convert Gemini Live 24kHz/16kHz 16-bit linear PCM to 8kHz 8-bit mulaw for Twilio."""
+    def pcm_to_mulaw(pcm_bytes: bytes, in_rate: int = 24000, out_rate: int = 8000) -> bytes:
         if not audioop:
-            return pcm_chunk
-        try:
-            if in_rate != 8000:
-                pcm_8k, _ = audioop.ratecv(pcm_chunk, 2, 1, in_rate, 8000, None)
-            else:
-                pcm_8k = pcm_chunk
-            return audioop.lin2ulaw(pcm_8k, 2)
-        except Exception:
-            return pcm_chunk
-
-    # =========================================================================
-    # BIDIRECTIONAL MEDIA STREAM WEBSOCKET HANDLER
-    # =========================================================================
+            return pcm_bytes
+        if in_rate != out_rate:
+            pcm_bytes, _ = audioop.ratecv(pcm_bytes, 2, 1, in_rate, out_rate, None)
+        return audioop.lin2ulaw(pcm_bytes, 2)
 
     @classmethod
-    async def handle_media_stream(cls, websocket: WebSocket, session_id: str, db: Session):
-        """
-        Handle bidirectional audio stream between Twilio Media Stream and Google Gemini Live API.
-        """
+    async def handle_media_stream(cls, websocket: WebSocket, session_id: str, db: Session) -> None:
+        """Bidirectional WebSocket handler for real-time Twilio media streaming."""
         await websocket.accept()
 
         req = db.query(VoiceCallbackRequest).filter(VoiceCallbackRequest.session_id == session_id).first()
         if not req:
-            await websocket.close(code=1008, reason="Invalid session")
+            await websocket.close(code=4004, reason="Callback request session not found")
             return
 
         prop = db.query(Property).filter(Property.id == req.property_id).first()
         if not prop:
-            await websocket.close(code=1008, reason="Property not found")
+            await websocket.close(code=4004, reason="Property not found")
             return
-
-        # Update status to connected
-        req.status = "connected"
-        req.updated_at = datetime.now(timezone.utc)
-        db.commit()
-
-        property_context = cls.build_property_knowledge_context(prop, db)
-        system_instruction = cls.get_system_instruction(property_context)
 
         stream_sid = None
         has_gemini_key = bool(settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip())
 
-        # If Gemini Live API key is configured, start real Gemini Live session
         if has_gemini_key:
             try:
                 from google import genai
                 from google.genai import types
 
+                system_instruction = cls.get_system_instruction(cls.build_property_knowledge_context(prop, db))
                 client = genai.Client(api_key=settings.GEMINI_API_KEY)
                 
                 live_config = types.LiveConnectConfig(
@@ -387,20 +453,17 @@ VERIFIED PROPERTY KNOWLEDGE BASE:
                 )
 
                 async with client.aio.live.connect(model=settings.GEMINI_LIVE_MODEL, config=live_config) as gemini_session:
-                    # Send initial prompt to prompt Gemini to greet the user
                     await gemini_session.send(
-                        input="Introduce yourself as the AI property assistant for Cloud-Based Real Estate Analysis and offer to answer questions about this property.",
+                        input=f"Hello, I am calling regarding {prop.title}. Is now a good time to talk?",
                         end_of_turn=True
                     )
 
-                    # Task 1: Gemini Audio -> Twilio Media Stream
                     async def gemini_to_twilio():
                         nonlocal stream_sid
                         try:
                             async for response in gemini_session.receive():
                                 server_content = response.server_content
                                 if server_content:
-                                    # Interruption detection (barge-in)
                                     if getattr(server_content, 'interrupted', False) and stream_sid:
                                         await websocket.send_text(json.dumps({
                                             "event": "clear",
@@ -423,7 +486,6 @@ VERIFIED PROPERTY KNOWLEDGE BASE:
                         except Exception as e:
                             print(f"Error in gemini_to_twilio: {e}")
 
-                    # Task 2: Twilio Media Stream -> Gemini Live
                     async def twilio_to_gemini():
                         nonlocal stream_sid
                         try:
@@ -434,7 +496,6 @@ VERIFIED PROPERTY KNOWLEDGE BASE:
 
                                 if event == "start":
                                     stream_sid = msg.get("start", {}).get("streamSid") or msg.get("streamSid")
-                                    print(f"Twilio Media Stream started: {stream_sid}")
 
                                 elif event == "media":
                                     payload = msg.get("media", {}).get("payload")
@@ -449,14 +510,12 @@ VERIFIED PROPERTY KNOWLEDGE BASE:
                                         )
 
                                 elif event == "stop":
-                                    print(f"Twilio Media Stream stopped: {stream_sid}")
                                     break
                         except (WebSocketDisconnect, asyncio.CancelledError):
                             pass
                         except Exception as e:
                             print(f"Error in twilio_to_gemini: {e}")
 
-                    # Run both tasks concurrently
                     consumer_task = asyncio.create_task(gemini_to_twilio())
                     producer_task = asyncio.create_task(twilio_to_gemini())
 
@@ -471,24 +530,18 @@ VERIFIED PROPERTY KNOWLEDGE BASE:
                 print(f"Gemini Live connection error: {gemini_err}")
                 req.error_message = str(gemini_err)
                 db.commit()
-
         else:
-            # Fallback/Mock mode when GEMINI_API_KEY is not configured
-            # Handles WebSocket connection smoothly for testing
             try:
                 while True:
                     data = await websocket.receive_text()
                     msg = json.loads(data)
-                    event = msg.get("event")
-                    if event == "start":
-                        stream_sid = msg.get("start", {}).get("streamSid")
-                    elif event == "stop":
+                    if msg.get("event") == "stop":
                         break
             except (WebSocketDisconnect, asyncio.CancelledError):
                 pass
 
-        # Finalize request status to completed
         req.status = "completed"
+        req.call_completed_at = datetime.now(timezone.utc)
         req.updated_at = datetime.now(timezone.utc)
         db.commit()
 

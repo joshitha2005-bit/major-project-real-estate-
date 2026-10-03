@@ -286,7 +286,7 @@ class ImageProvenanceService:
             "image_provenance": "REPRESENTATIVE",
             "provenance_badge": "REPRESENTATIVE IMAGE — NOT ACTUAL PROPERTY",
             "disclosure_note": "Representative real-estate photograph (publicly usable reference). Reference image — not verified as the actual property. Not claimed as an actual property photograph.",
-            "usable_for_ai": True,
+            "usable_for_ai": False,
             "images": cleaned_images,
             "primary_image": first_img
         }

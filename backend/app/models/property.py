@@ -115,7 +115,9 @@ class Property(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
+    visibility_status = Column(String(50), default="PUBLIC", index=True)  # PUBLIC or PRIVATE
     user = relationship("User", back_populates="properties")
+    private_owner_contact = relationship("PrivateOwnerContact", back_populates="property", uselist=False, cascade="all, delete-orphan")
     property_images = relationship("PropertyImage", back_populates="property", cascade="all, delete-orphan", order_by="PropertyImage.order")
 
 PropertyListing = Property

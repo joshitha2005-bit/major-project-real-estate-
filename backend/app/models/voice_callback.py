@@ -16,6 +16,11 @@ class VoiceCallbackRequest(Base):
     status = Column(String(50), default="calling")  # calling, connected, completed, failed
     inquiry_text = Column(Text, nullable=True)
     error_message = Column(Text, nullable=True)
+    consent = Column(Boolean, default=True)
+    consent_timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    call_started_at = Column(DateTime, nullable=True)
+    call_completed_at = Column(DateTime, nullable=True)
+    duration_seconds = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

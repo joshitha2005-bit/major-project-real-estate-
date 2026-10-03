@@ -70,6 +70,37 @@ def run_migrations(target_path: str = None):
             conn.commit()
             print("Migration: 'subscriptions' table created successfully.")
 
+        # 2b. Phase C migrations for subscriptions table columns
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='subscriptions'")
+        sub_exists = cursor.fetchone()
+        if sub_exists:
+            cursor.execute("PRAGMA table_info(subscriptions)")
+            sub_cols = [col[1] for col in cursor.fetchall()]
+
+            sub_new_cols = {
+                "plan": "VARCHAR(50) DEFAULT 'FREE'",
+                "subscription_status": "VARCHAR(50) DEFAULT 'FREE'",
+                "razorpay_customer_id": "VARCHAR(255)",
+                "razorpay_subscription_id": "VARCHAR(255)",
+                "razorpay_order_id": "VARCHAR(255)",
+                "razorpay_payment_id": "VARCHAR(255)",
+                "plan_amount": "FLOAT DEFAULT 299.0",
+                "currency": "VARCHAR(10) DEFAULT 'INR'",
+                "created_at": "DATETIME",
+                "updated_at": "DATETIME"
+            }
+
+            for col_name, col_type in sub_new_cols.items():
+                if col_name not in sub_cols:
+                    print(f"Migration: Adding '{col_name}' column to 'subscriptions' table...")
+                    cursor.execute(f"ALTER TABLE subscriptions ADD COLUMN {col_name} {col_type}")
+
+            # Also ensure plan and subscription_status match status if existing
+            cursor.execute("UPDATE subscriptions SET plan = 'PRO' WHERE (plan IS NULL OR plan = 'FREE') AND (plan_name LIKE '%PRO%' OR status = 'ACTIVE')")
+            cursor.execute("UPDATE subscriptions SET subscription_status = status WHERE subscription_status IS NULL OR subscription_status = 'FREE'")
+            conn.commit()
+            print("Migration: 'subscriptions' columns checked/updated.")
+
         # 3. Phase B migrations for properties table columns
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='properties'")
         prop_exists = cursor.fetchone()

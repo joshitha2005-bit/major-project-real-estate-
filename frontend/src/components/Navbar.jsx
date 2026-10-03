@@ -57,15 +57,7 @@ export const Navbar = () => {
               Properties
             </Link>
 
-            <Link
-              to="/analytics"
-              className={`flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-brand-500 ${
-                isActive('/analytics') || location.pathname.startsWith('/analytics/') ? 'text-brand-500 font-semibold' : 'text-slate-300'
-              }`}
-            >
-              <Brain className="w-4 h-4 text-purple-400" />
-              AI Analytics
-            </Link>
+
 
             <Link
               to="/gis"
@@ -94,7 +86,7 @@ export const Navbar = () => {
               }`}
             >
               <Sparkles className="w-4 h-4 text-amber-400" />
-              Upgrade / Roles
+              PropPulse Pro
             </Link>
 
             <Link
@@ -186,13 +178,7 @@ export const Navbar = () => {
           >
             Properties
           </Link>
-          <Link
-            to="/analytics"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-md text-base font-medium text-slate-200 hover:bg-slate-800"
-          >
-            AI Analytics
-          </Link>
+
           <Link
             to="/gis"
             onClick={() => setMobileMenuOpen(false)}
@@ -212,7 +198,7 @@ export const Navbar = () => {
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-md text-base font-medium text-slate-200 hover:bg-slate-800"
           >
-            Upgrade / Roles
+            PropPulse Pro
           </Link>
           <Link
             to="/profile"

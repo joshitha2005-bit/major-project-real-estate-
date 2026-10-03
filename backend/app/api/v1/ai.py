@@ -96,7 +96,19 @@ async def analyze_property_full_ai(
 
     # 4. Multimodal Feature Fusion & XGBoost Price Prediction
     from app.services.multimodal_model_service import MultimodalModelService
-    images_to_fuse = img_prov.get("images") or (prop.images if isinstance(prop.images, list) else [])
+        # Representative/reference images MUST NEVER be passed into the production ResNet-18 -> 512 -> 544 -> XGBoost inference pipeline.
+    # Only verified property-specific photographs or owner/user uploads may enter multimodal fusion.
+    image_cls = img_prov.get("image_classification", "REPRESENTATIVE")
+    is_genuine_property_photo = (
+        image_cls in ["PROPERTY_SPECIFIC", "AUTHORIZED_PROPERTY_IMAGE", "USER_UPLOADED", "OWNER_UPLOADED"]
+        and img_prov.get("usable_for_ai", False) is True
+    )
+
+    if is_genuine_property_photo:
+        images_to_fuse = img_prov.get("images") or (prop.images if isinstance(prop.images, list) else [])
+    else:
+        # Documented missing-image strategy: pass None -> MultimodalModelService outputs 512 zeros
+        images_to_fuse = None
     multimodal_res = MultimodalModelService.predict_property(
         area_sqft=prop.area_sqft,
         bhk=prop.bhk,
@@ -136,12 +148,14 @@ async def analyze_property_full_ai(
     prediction_results["estimated_rental_price"] = multimodal_res["estimated_rental_price"]
     prediction_results["prediction_status"] = multimodal_res["prediction_status"]
     prediction_results["model_version"] = multimodal_res.get("model_version", "2.0.0-multimodal-xgboost")
-    prediction_results["image_resnet18"] = True
+    prediction_results["image_resnet18"] = is_genuine_property_photo
     prediction_results["cnn_model"] = "PyTorch ResNet-18"
-    prediction_results["cnn_status"] = cv_results.get("cnn_status", "ACTIVE")
+    prediction_results["cnn_status"] = cv_results.get("cnn_status", "ACTIVE") if is_genuine_property_photo else ("UNAVAILABLE_REPRESENTATIVE_ONLY" if image_cls == "REPRESENTATIVE" else cv_results.get("cnn_status", "UNAVAILABLE"))
     prediction_results["cnn_embedding_dim"] = 512
     prediction_results["image_provenance"] = img_prov.get("image_provenance", "REPRESENTATIVE")
-    prediction_results["image_loaded"] = cv_results.get("image_loaded", True)
+    prediction_results["provenance_badge"] = img_prov.get("provenance_badge", "REPRESENTATIVE IMAGE — NOT ACTUAL PROPERTY")
+    prediction_results["image_loaded"] = cv_results.get("image_loaded", False) if not is_genuine_property_photo else True
+    prediction_results["image_evidence_used"] = is_genuine_property_photo
     prediction_results["embedding_norm"] = cv_results.get("embedding_norm", multimodal_res["feature_fusion_breakdown"].get("image_vector_l2_norm", 0.0))
     prediction_results["non_zero_features"] = cv_results.get("non_zero_features", multimodal_res["feature_fusion_breakdown"].get("non_zero_features", 512))
     prediction_results["embedding_sample"] = cv_results.get("embedding_sample", multimodal_res["feature_fusion_breakdown"].get("embedding_sample", []))

@@ -21,12 +21,31 @@ class User(Base):
 
     @property
     def subscription_status(self) -> str:
+        """
+        Calculates effective subscription status for the user.
+        Admins automatically have ACTIVE access.
+        For normal users, checks for active PRO subscription within valid date range.
+        """
+        if self.role == "ADMIN":
+            return "ACTIVE"
         if not self.subscriptions:
             return "FREE"
+        
+        now = datetime.now(timezone.utc)
         for sub in self.subscriptions:
-            if sub.status == "ACTIVE":
-                if not sub.end_date or sub.end_date.replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
+            st = (getattr(sub, "subscription_status", None) or getattr(sub, "status", None) or "").upper()
+            plan = (getattr(sub, "plan", None) or getattr(sub, "plan_name", None) or "").upper()
+            if st == "ACTIVE" and ("PRO" in plan or plan == "PROPULSE_PRO_299"):
+                if not sub.end_date:
+                    return "ACTIVE"
+                end_dt = sub.end_date if sub.end_date.tzinfo else sub.end_date.replace(tzinfo=timezone.utc)
+                if end_dt > now:
                     return "ACTIVE"
         return "FREE"
 
+    @property
+    def current_plan(self) -> str:
+        return "PRO" if self.subscription_status == "ACTIVE" else "FREE"
 
+    def is_pro_active(self) -> bool:
+        return self.subscription_status == "ACTIVE"

@@ -228,7 +228,7 @@ class TestObjective2MultimodalPipeline(unittest.TestCase):
         nlp_out = TextAIService.analyze_description(self.sample_description)
         
         # 3. Computer Vision Image Intelligence
-        cv_out = ImageAIService.analyze_property_images([self.valid_image_path])
+        cv_out = ImageAIService.analyze_property_images([self.valid_image_path], image_classification="PROPERTY_SPECIFIC")
         
         # 4. Location / GIS Intelligence
         loop = asyncio.new_event_loop()

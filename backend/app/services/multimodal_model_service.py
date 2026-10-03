@@ -213,6 +213,7 @@ class MultimodalModelService:
             "geoapify_dimensions": len(geo_vec),
             "tfidf_dimensions": len(tfidf_vec),
             "resnet18_dimensions": len(img_vec),
+            "image_evidence_used": bool(image_source),
             "total_fused_dimensions": len(fused),
             "image_has_nonzero_features": bool(np.any(img_vec != 0.0)),
             "image_vector_l2_norm": float(round(float(np.linalg.norm(img_vec)), 4)),
@@ -308,7 +309,11 @@ class MultimodalModelService:
                 modality_contributions["structured_tabular"] = float(round(np.sum(np.abs(vals[0:6])), 2))
                 modality_contributions["geospatial_geoapify"] = float(round(np.sum(np.abs(vals[6:16])), 2))
                 modality_contributions["text_tfidf"] = float(round(np.sum(np.abs(vals[16:32])), 2))
-                modality_contributions["image_resnet18"] = float(round(np.sum(np.abs(vals[32:544])), 2))
+                has_image_evidence = bool(image_source)
+                if has_image_evidence:
+                    modality_contributions["image_resnet18"] = float(round(np.sum(np.abs(vals[32:544])), 2))
+                else:
+                    modality_contributions["image_resnet18"] = 0.0
 
                 # Extract individual feature impacts
                 feat_impacts = []
@@ -343,6 +348,8 @@ class MultimodalModelService:
                         return ("Visual Aesthetics (ResNet-18)", "CNN visual features from property imagery")
                     return (fn_name.replace('_', ' ').title(), "Model input feature contribution")
 
+                if not bool(image_source):
+                    feat_impacts = [fi for fi in feat_impacts if not fi[0].startswith("resnet18_feat_")]
                 feat_impacts.sort(key=lambda x: x[1], reverse=True)
                 for fn, val in feat_impacts[:5]:
                     if val > 0:

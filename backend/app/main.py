@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
-from app.api.v1 import auth, location, properties, ai, listings, voice_assistant
+from app.api.v1 import auth, location, properties, ai, listings, voice_assistant, loans, admin_private, subscriptions
 from app.services.seed_service import SeedService
 from app.models.user import User
 from app.models.subscription import Subscription
@@ -54,6 +54,11 @@ app.include_router(properties.router, prefix=f"{settings.API_V1_STR}/properties"
 app.include_router(listings.router, prefix=f"{settings.API_V1_STR}/listings", tags=["Direct Listings"])
 app.include_router(ai.router, prefix=f"{settings.API_V1_STR}/ai", tags=["AI Engine"])
 app.include_router(voice_assistant.router, prefix=f"{settings.API_V1_STR}/voice-assistant", tags=["AI Voice Property Assistant"])
+app.include_router(loans.router, prefix=f"{settings.API_V1_STR}/loans", tags=["Home Loan & Bank Comparison"])
+app.include_router(subscriptions.router, prefix=f"{settings.API_V1_STR}/subscriptions", tags=["Subscriptions & Access Control"])
+app.include_router(admin_private.router, prefix=f"{settings.API_V1_STR}/admin", tags=["Private Admin Dashboard"])
+app.include_router(admin_private.router, prefix=f"{settings.API_V1_STR}", tags=["Private Admin Direct"])
+
 
 @app.get("/")
 def root():

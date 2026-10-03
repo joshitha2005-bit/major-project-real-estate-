@@ -59,28 +59,12 @@ def get_current_user_with_role(required_role: str):
     return dependency
 
 def verify_pro_access(
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
-) -> Optional[User]:
-    if not current_user:
-        # Default to primary admin/pro account for seamless evaluation & demo access
-        admin_pro = db.query(User).filter(User.id == 1).first()
-        return admin_pro
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> User:
+    """Delegates to standardized require_pro_subscription dependency."""
+    from app.dependencies.subscriptions import require_pro_subscription
+    return require_pro_subscription(current_user=current_user, db=db)
 
-    from app.models.subscription import Subscription
-    from datetime import datetime, timezone
-    if current_user.role == "ADMIN":
-        return current_user
 
-    sub = db.query(Subscription).filter(
-        Subscription.user_id == current_user.id,
-        Subscription.status == "ACTIVE"
-    ).first()
-    if sub and (not sub.end_date or sub.end_date.replace(tzinfo=timezone.utc) >= datetime.now(timezone.utc)):
-        return current_user
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Pro Subscription required. Please upgrade to Pro for Rs.299/month."
-    )
-
+from app.dependencies.subscriptions import require_pro_subscription
