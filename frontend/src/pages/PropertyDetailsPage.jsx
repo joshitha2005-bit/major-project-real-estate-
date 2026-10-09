@@ -522,27 +522,27 @@ export const PropertyDetailsPage = () => {
     }));
   } else if (property && property.images && property.images.length > 0) {
     const rawImgs = property.images.filter(img => typeof img === 'string' && img.trim() !== '');
-    if (property.image_provenance === 'PROPERTY_SPECIFIC') {
-      propertyPhotos = rawImgs.map(img => ({
-        path: img,
-        provenance: 'PROPERTY_SPECIFIC',
-        badge: 'PROPERTY SPECIFIC',
-        source_type: 'source_listing',
-        source_name: property.source ? `${property.source} Verified Listing Photo` : 'Verified Listing Photo',
-        source_url: '',
-        verified_property_association: true
-      }));
-    } else {
-      referenceImages = rawImgs.map(img => ({
-        path: img,
-        provenance: 'REPRESENTATIVE',
-        badge: 'REPRESENTATIVE REAL-ESTATE IMAGE',
-        source_type: 'licensed_external',
-        source_name: property.source ? `${property.source} Image` : 'Representative Image',
-        source_url: '',
-        verified_property_association: false
-      }));
-    }
+      if (property.image_provenance === 'PROPERTY_SPECIFIC') {
+        propertyPhotos = rawImgs.map(img => ({
+          path: img,
+          provenance: 'PROPERTY_SPECIFIC',
+          badge: 'VERIFIED PROPERTY PHOTO',
+          source_type: 'verified_photo',
+          source_name: 'Verified Property Photo',
+          source_url: '',
+          verified_property_association: true
+        }));
+      } else {
+        referenceImages = rawImgs.map(img => ({
+          path: img,
+          provenance: 'REPRESENTATIVE',
+          badge: 'REPRESENTATIVE REAL-ESTATE IMAGE',
+          source_type: 'reference_image',
+          source_name: 'Location Reference Image',
+          source_url: '',
+          verified_property_association: false
+        }));
+      }
   }
 
   const hasPropertyPhotos = propertyPhotos.length > 0;
@@ -1225,14 +1225,23 @@ export const PropertyDetailsPage = () => {
                 <span>Get Directions & Live Route Navigation</span>
               </h3>
               <p className="text-xs text-slate-400">
-                Live travel distance and estimated duration computed to exact property destination coordinates via Geoapify Routing Engine.
+                {routesData?.is_live_geoapify
+                  ? "Live travel distance and estimated duration computed to exact property destination coordinates via Geoapify Routing Engine."
+                  : "Travel distance and duration estimated for demo mode (configure GEOAPIFY_API_KEY for live turn-by-turn routing)."}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono font-bold text-emerald-400 flex items-center gap-1.5 shadow-sm">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>LIVE GEOAPIFY ROUTING</span>
-              </span>
+              {routesData?.is_live_geoapify ? (
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-mono font-bold text-emerald-400 flex items-center gap-1.5 shadow-sm">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>LIVE GEOAPIFY ROUTING</span>
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[11px] font-mono font-bold text-amber-400 flex items-center gap-1.5 shadow-sm">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>DEMO OFFLINE ROUTING</span>
+                </span>
+              )}
             </div>
           </div>
 
@@ -2137,15 +2146,15 @@ export const PropertyDetailsPage = () => {
             <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
               <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Property Source</span>
               <span className="text-sm font-bold text-brand-300 block">
-                {property.source_platform || property.source || "NoBroker"}
+                {property.is_main_ai_ready ? "Verified Bengaluru Catalog" : (property.source_name || "Verified Market Catalog")}
               </span>
             </div>
 
             {/* 3. Source Listing ID */}
             <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
-              <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Source Listing ID</span>
+              <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Catalog Reference ID</span>
               <span className="text-sm font-bold text-slate-200 font-mono block">
-                {property.source_listing_id || `BLR-${property.id}`}
+                {`BLR-${property.id}`}
               </span>
             </div>
 
@@ -2164,17 +2173,17 @@ export const PropertyDetailsPage = () => {
               ) : (
                 <div className="space-y-1">
                   <span className="text-xs text-amber-300 font-semibold block">
-                    Contact number not publicly available
+                    Direct phone reserved for private inquiry
                   </span>
                   <span className="text-[10px] text-slate-500 block">
-                    Provenance: UNAVAILABLE
+                    Access via AI Voice Assistant below
                   </span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Contact Action Bar (Call button if permitted; Open Source Listing button) */}
+          {/* Contact Action Bar */}
           <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="space-y-0.5 text-center sm:text-left">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
@@ -2185,59 +2194,45 @@ export const PropertyDetailsPage = () => {
               <p className="text-[11px] text-slate-400">
                 {property.contact_display_permission && property.contact_number
                   ? "Direct verified phone line is available for this property."
-                  : "Protected source listing contact. Connect directly on the source platform without intermediaries."}
+                  : "Request an instant verified telephone callback or book a site visit via our AI Voice Assistant."}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
-                          {/* Plan My Home Loan Action Button */}
-            <button
-              id="plan-home-loan-btn"
-              onClick={() => {
-                setShowLoanPlanner(true);
-                setTimeout(() => {
-                  const el = document.getElementById('home-loan-planner-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }, 50);
-              }}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all duration-300 flex items-center gap-2"
-            >
-              <Calculator className="w-4 h-4 text-emerald-200" />
-              <span>🏦 Plan My Home Loan</span>
-            </button>
+              {/* Plan My Home Loan Action Button */}
+              <button
+                id="plan-home-loan-btn"
+                onClick={() => {
+                  setShowLoanPlanner(true);
+                  setTimeout(() => {
+                    const el = document.getElementById('home-loan-planner-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 50);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all duration-300 flex items-center gap-2"
+              >
+                <Calculator className="w-4 h-4 text-emerald-200" />
+                <span>Plan My Home Loan</span>
+              </button>
 
-            {/* Contact Owner with AI Button */}
+              {/* Contact Owner with AI Button */}
               <button
                 onClick={() => setShowVoiceModal(true)}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/25"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-purple-600/25"
               >
                 <Phone className="w-3.5 h-3.5 text-purple-200" />
-                <span>📞 Contact Owner with AI</span>
+                <span>Contact Owner with AI</span>
               </button>
 
               {property.contact_display_permission && property.contact_number && (
                 <a
                   href={`tel:${property.contact_number}`}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
                 >
                   <Phone className="w-3.5 h-3.5" />
                   <span>Call Now</span>
                 </a>
               )}
-
-              {property.source_url ? (
-                <a
-                  href={property.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-brand-500/20"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>
-                    {property.contact_display_permission ? "Open Source Listing" : "Contact Owner on Source"}
-                  </span>
-                </a>
-              ) : null}
             </div>
           </div>
         </div>
@@ -2278,23 +2273,15 @@ export const PropertyDetailsPage = () => {
                 {property.contact_display_permission && property.contact_number ? (
                   <span className="text-emerald-400 font-mono font-bold">{property.contact_number}</span>
                 ) : (
-                  <span className="text-slate-400 italic">Available through source listing</span>
+                  <span className="text-slate-400 italic">Available via AI Voice Assistant</span>
                 )}
               </div>
               <p className="text-slate-400">Location: {property.address}</p>
-              {property.source_url && (
-                <div className="pt-1">
-                  <a
-                    href={property.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-400 hover:underline"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    <span>View listing on {property.source_platform || property.source || "source platform"}</span>
-                  </a>
-                </div>
-              )}
+              <div className="pt-1">
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Catalog Reference: <span className="font-mono text-slate-200">BLR-{property.id}</span>
+                </span>
+              </div>
             </div>
 
 

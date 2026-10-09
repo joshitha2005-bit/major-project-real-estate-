@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.config import settings
 from app.core.database import Base
-from app.models import User, SearchHistory, SavedLocation
+import app.models  # noqa: F401 - registers all models with Base.metadata
 
 config = context.config
 
@@ -20,8 +20,14 @@ if config.config_file_name:
 
 target_metadata = Base.metadata
 
-def run_migrations_offline() -> None:
+def get_normalized_url() -> str:
     url = settings.DATABASE_URL
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    return url
+
+def run_migrations_offline() -> None:
+    url = get_normalized_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -34,7 +40,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = settings.DATABASE_URL
+    configuration["sqlalchemy.url"] = get_normalized_url()
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",

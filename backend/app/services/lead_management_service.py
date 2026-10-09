@@ -376,7 +376,7 @@ class LeadManagementService:
 
         sv_data = [
             [Paragraph("<b>Site Visit Requested:</b>", cell_bold), Paragraph(sv_req, cell_val), Paragraph("<b>Preferred Schedule:</b>", cell_bold), Paragraph(sv_date, cell_val)],
-            [Paragraph("<b>Owner Callback Requested:</b>", cell_bold), Paragraph(cb_req, cell_val), Paragraph("<b>Owner Notification Status:</b>", cell_bold), Paragraph(lead.owner_sent_status, cell_val)],
+            [Paragraph("<b>Owner Callback Requested:</b>", cell_bold), Paragraph(cb_req, cell_val), Paragraph("<b>Owner Notification Status:</b>", cell_bold), Paragraph(str(lead.owner_sent_status or "PENDING_REVIEW"), cell_val)],
         ]
         sv_table = Table(sv_data, colWidths=[140, 130, 140, 130])
         sv_table.setStyle(TableStyle([
@@ -390,15 +390,17 @@ class LeadManagementService:
 
         # 6. Confidential Owner & Admin Review Section
         elements.append(Paragraph("Confidential Verified Contact Information (Admin Only)", section_style))
-        owner_name = private_contact.contact_name if private_contact else "Not Assigned"
-        owner_phone = private_contact.phone if private_contact else "N/A"
-        owner_email = private_contact.email if private_contact else "N/A"
-        owner_ver = private_contact.verification_status if private_contact else "UNVERIFIED"
+        owner_name = str(private_contact.contact_name or "Not Assigned") if private_contact else "Not Assigned"
+        owner_phone = str(private_contact.phone or "N/A") if private_contact else "N/A"
+        owner_email = str(private_contact.email or "N/A") if private_contact else "N/A"
+        owner_ver = str(private_contact.verification_status or "UNVERIFIED") if private_contact else "UNVERIFIED"
+        owner_type = str(private_contact.contact_type or "N/A") if private_contact else "N/A"
+        owner_src = str(private_contact.source or "N/A") if private_contact else "N/A"
 
         owner_data = [
-            [Paragraph("<b>Contact Name:</b>", cell_bold), Paragraph(owner_name, cell_val), Paragraph("<b>Contact Type:</b>", cell_bold), Paragraph(private_contact.contact_type if private_contact else "N/A", cell_val)],
+            [Paragraph("<b>Contact Name:</b>", cell_bold), Paragraph(owner_name, cell_val), Paragraph("<b>Contact Type:</b>", cell_bold), Paragraph(owner_type, cell_val)],
             [Paragraph("<b>Contact Phone:</b>", cell_bold), Paragraph(owner_phone, cell_val), Paragraph("<b>Verification:</b>", cell_bold), Paragraph(owner_ver, cell_val)],
-            [Paragraph("<b>Contact Email:</b>", cell_bold), Paragraph(owner_email, cell_val), Paragraph("<b>Source:</b>", cell_bold), Paragraph(private_contact.source if private_contact else "N/A", cell_val)],
+            [Paragraph("<b>Contact Email:</b>", cell_bold), Paragraph(owner_email, cell_val), Paragraph("<b>Source:</b>", cell_bold), Paragraph(owner_src, cell_val)],
         ]
         owner_table = Table(owner_data, colWidths=[110, 160, 110, 160])
         owner_table.setStyle(TableStyle([
@@ -426,18 +428,19 @@ class LeadManagementService:
         """
         lead = db.query(AILead).filter(AILead.id == lead_id).first()
         if not lead:
-            return {"success": False, "message": "Lead not found."}
+            return {"success": False, "status": "NOT_FOUND", "message": "Lead not found."}
 
         if lead.validation_status in ["INVALID", "SPAM"]:
-            return {"success": False, "message": "Cannot send SPAM or INVALID leads to property owners."}
+            return {"success": False, "status": "INVALID_LEAD", "message": "Cannot send SPAM or INVALID leads to property owners."}
 
         if not lead.property_id:
-            return {"success": False, "message": "Lead is not associated with an active property."}
+            return {"success": False, "status": "NO_PROPERTY", "message": "Lead is not associated with an active property."}
 
         private_contact = db.query(PrivateOwnerContact).filter(PrivateOwnerContact.property_id == lead.property_id).first()
         if not private_contact or private_contact.verification_status != "VERIFIED":
             return {
                 "success": False,
+                "status": "UNVERIFIED_CONTACT",
                 "message": "Cannot send to unverified contact. Please verify owner contact credentials before dispatch."
             }
 

@@ -65,17 +65,31 @@ export const NearbyPlacesList = ({
     categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
   });
 
+  const isLiveGeoapify = cleanPlaces.some(p => p.source === "LIVE_GEOAPIFY");
+
   return (
     <div className="glass-card p-6 rounded-2xl border border-slate-800 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div>
-          <h3 className="text-lg font-bold text-white font-outfit flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-brand-500" />
-            Nearby Amenities &amp; GIS Places
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-lg font-bold text-white font-outfit flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-brand-500" />
+              Nearby Amenities &amp; GIS Places
+            </h3>
+            <span className={`inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+              isLiveGeoapify
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                : "bg-blue-500/10 text-blue-400 border-blue-500/30"
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isLiveGeoapify ? "bg-emerald-400 animate-pulse" : "bg-blue-400"}`} />
+              {isLiveGeoapify ? "LIVE GEOAPIFY" : "DEMO / VERIFIED DATASET"}
+            </span>
+          </div>
           <p className="text-xs text-slate-400 mt-1">
-            Real-time nearby infrastructure queried via Geoapify GIS engine
+            {isLiveGeoapify
+              ? "Real-time nearby infrastructure queried via Geoapify GIS engine"
+              : "Civic infrastructure loaded from verified property database (DEMO mode)"}
           </p>
         </div>
 

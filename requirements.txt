@@ -1,0 +1,2 @@
+# GeoSmart Price AI - Root Requirements Redirect
+-r backend/requirements.txt

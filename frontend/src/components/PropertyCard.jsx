@@ -66,10 +66,10 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
     property.source_type === 'PROPPULSE_DIRECT'
   ) && !isHistorical;
   const isCurrentSource = property && (
-    property.source_name === 'NoBroker.in' ||
-    property.source === 'NoBroker' ||
-    property.source_type === 'source_portal' ||
-    property.listing_status === 'CURRENT_SOURCE_LISTING'
+    property.listing_status === 'CURRENT' ||
+    property.listing_status === 'CURRENT_SOURCE_LISTING' ||
+    property.is_main_ai_ready === true ||
+    property.dataset_category === 'MAIN_AI_READY'
   );
   
   // Extract primary / first image if available
@@ -189,7 +189,7 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
               <span className="text-brand-400 font-semibold">{property.locality || 'Bengaluru'}</span>
               <span className="text-slate-700">•</span>
               <span className={isHistorical ? 'text-amber-400 font-semibold' : 'text-emerald-400 font-semibold'}>
-                {isDirect ? 'PropPulse Direct' : isCurrentSource ? 'NoBroker Verified Listing' : 'Historical Dataset'}
+                {isDirect ? 'PropPulse Direct' : isCurrentSource ? 'Verified Market Listing' : 'Historical Dataset'}
               </span>
             </div>
 

@@ -406,14 +406,14 @@ class MultimodalModelService:
             "model_metrics": {
                 "model_version": _MULTIMODAL_META.get("model_version", "2.0.0-multimodal-resnet18-xgboost") if _MULTIMODAL_META else "2.0.0-multimodal-resnet18-xgboost",
                 "evaluation_dataset_size": _MULTIMODAL_META.get("total_properties_trained", 600) if _MULTIMODAL_META else 600,
-                "validation_methodology": "80/20 Train-Test Split with 5-Fold Cross Validation",
+                "validation_methodology": "80/20 Train-Test Split (480 train, 120 test); 5-fold cross-validation not implemented",
                 "fused_dimensions": 544,
-                "r2_score": _MULTIMODAL_META.get("final_metrics", {}).get("r2_score", 0.6649) if _MULTIMODAL_META else 0.6649,
-                "rmse_lakhs": _MULTIMODAL_META.get("final_metrics", {}).get("rmse_lakhs", 78.80) if _MULTIMODAL_META else 78.80,
-                "mae_lakhs": _MULTIMODAL_META.get("final_metrics", {}).get("mae_lakhs", 49.26) if _MULTIMODAL_META else 49.26,
-                "mape_percent": _MULTIMODAL_META.get("final_metrics", {}).get("mape_percent", 33.72) if _MULTIMODAL_META else 33.72,
-                "rmse_inr": _MULTIMODAL_META.get("final_metrics", {}).get("rmse_inr", 7880087.13) if _MULTIMODAL_META else 7880087.13,
-                "mae_inr": _MULTIMODAL_META.get("final_metrics", {}).get("mae_inr", 4925758.50) if _MULTIMODAL_META else 4925758.50
+                "r2_score": _MULTIMODAL_META.get("final_metrics", {}).get("r2_score", 0.6305) if _MULTIMODAL_META else 0.6305,
+                "rmse_lakhs": _MULTIMODAL_META.get("final_metrics", {}).get("rmse_lakhs", 82.75) if _MULTIMODAL_META else 82.75,
+                "mae_lakhs": _MULTIMODAL_META.get("final_metrics", {}).get("mae_lakhs", 52.30) if _MULTIMODAL_META else 52.30,
+                "mape_percent": _MULTIMODAL_META.get("final_metrics", {}).get("mape_percent", 35.42) if _MULTIMODAL_META else 35.42,
+                "rmse_inr": _MULTIMODAL_META.get("final_metrics", {}).get("rmse_inr", 8274591.91) if _MULTIMODAL_META else 8274591.91,
+                "mae_inr": _MULTIMODAL_META.get("final_metrics", {}).get("mae_inr", 5229828.50) if _MULTIMODAL_META else 5229828.50
             },
             "confidence_score": 92.0 if breakdown["image_has_nonzero_features"] else 85.0
         }

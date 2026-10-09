@@ -10,7 +10,7 @@ services:
     environment:
       DATABASE_URL: sqlite:///./real_estate.db
       JWT_SECRET: ${JWT_SECRET:-super-secret-key-geosmart-ai-2026}
-      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-b3a32f6b49eb40cbb1fb67a0e300bd73}
+      GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-}
     ports:
       - "8000:8000"
     healthcheck:

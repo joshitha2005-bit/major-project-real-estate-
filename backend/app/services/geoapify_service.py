@@ -27,58 +27,67 @@ def calculate_price_estimate(location_text: str, lat: float, lon: float) -> tupl
     return rate_info["avg_sqft"], rate_info["price_range_str"]
 
 class GeoapifyService:
+    @classmethod
+    def is_configured(cls) -> bool:
+        """Check if a valid, non-empty Geoapify API key is configured."""
+        key = (settings.GEOAPIFY_API_KEY or "").strip()
+        return bool(key and len(key) >= 10 and not key.startswith("your_"))
+
     @staticmethod
     async def search_geocode(text: str) -> Optional[Dict[str, Any]]:
         """Geocode address query strictly using live Geoapify API with automatic Bangalore bias."""
-        async with httpx.AsyncClient(timeout=12.0) as client:
-            params = {
-                "text": text,
-                "apiKey": settings.GEOAPIFY_API_KEY,
-                "limit": 1
-            }
-            if "india" not in text.lower() and "bangalore" not in text.lower() and "bengaluru" not in text.lower():
-                params["bias"] = "proximity:77.5946,12.9716"
-                params["filter"] = "countrycode:in"
+        if GeoapifyService.is_configured():
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                params = {
+                    "text": text,
+                    "apiKey": settings.GEOAPIFY_API_KEY,
+                    "limit": 1
+                }
+                if "india" not in text.lower() and "bangalore" not in text.lower() and "bengaluru" not in text.lower():
+                    params["bias"] = "proximity:77.5946,12.9716"
+                    params["filter"] = "countrycode:in"
 
-            try:
-                response = await client.get(GEOAPIFY_GEOCODE_URL, params=params)
-                if response.status_code == 200:
-                    data = response.json()
-                    features = data.get("features", [])
-                    if features:
-                        feature = features[0]
-                        props = feature.get("properties", {})
-                        geometry = feature.get("geometry", {})
-                        coords = geometry.get("coordinates", [77.5946, 12.9716])
-                        lon, lat = coords[0], coords[1]
-                        
-                        formatted = props.get("formatted") or props.get("address_line1") or text
-                        city = props.get("city") or props.get("county") or "Bengaluru"
-                        state = props.get("state") or "Karnataka"
-                        country = props.get("country") or "India"
-                        postcode = props.get("postcode")
-                        place_id = props.get("place_id")
-                        
-                        avg_price, price_range = calculate_price_estimate(formatted, lat, lon)
+                try:
+                    response = await client.get(GEOAPIFY_GEOCODE_URL, params=params)
+                    if response.status_code == 200:
+                        data = response.json()
+                        features = data.get("features", [])
+                        if features:
+                            feature = features[0]
+                            props = feature.get("properties", {})
+                            geometry = feature.get("geometry", {})
+                            coords = geometry.get("coordinates", [77.5946, 12.9716])
+                            lon, lat = coords[0], coords[1]
+                            
+                            formatted = props.get("formatted") or props.get("address_line1") or text
+                            city = props.get("city") or props.get("county") or "Bengaluru"
+                            state = props.get("state") or "Karnataka"
+                            country = props.get("country") or "India"
+                            postcode = props.get("postcode")
+                            place_id = props.get("place_id")
+                            
+                            avg_price, price_range = calculate_price_estimate(formatted, lat, lon)
 
-                        return {
-                            "query": text,
-                            "formatted_address": formatted,
-                            "latitude": lat,
-                            "longitude": lon,
-                            "city": city,
-                            "state": state,
-                            "country": country,
-                            "postcode": postcode,
-                            "place_id": place_id,
-                            "estimated_price_sqft": avg_price,
-                            "price_range": price_range
-                        }
-            except Exception as e:
-                print(f"Geoapify Geocode error: {e}")
+                            return {
+                                "query": text,
+                                "formatted_address": formatted,
+                                "latitude": lat,
+                                "longitude": lon,
+                                "city": city,
+                                "state": state,
+                                "country": country,
+                                "postcode": postcode,
+                                "place_id": place_id,
+                                "estimated_price_sqft": avg_price,
+                                "price_range": price_range,
+                                "geocoding_source": "LIVE_GEOAPIFY",
+                                "is_live_geoapify": True
+                            }
+                except Exception as e:
+                    print(f"Geoapify Geocode error: {e}")
 
-        # --- GRACEFUL FALLBACK ---
-        # If API failed, rate limit was reached, or no match was found:
+        # --- GRACEFUL DEMO / OFFLINE FALLBACK ---
+        # Explicitly marked as DEMO_OFFLINE_BENCHMARK_FALLBACK so UI/API never misleads the user
         rate_info = get_locality_market_rate(text)
         lat, lon = rate_info["lat"], rate_info["lon"]
         formatted = f"{rate_info['locality_name']}, Bengaluru, Karnataka, India" if "bengaluru" not in text.lower() else f"{text.title()}, Karnataka, India"
@@ -94,44 +103,49 @@ class GeoapifyService:
             "postcode": "560001",
             "place_id": "market_ref_loc",
             "estimated_price_sqft": rate_info["avg_sqft"],
-            "price_range": rate_info["price_range_str"]
+            "price_range": rate_info["price_range_str"],
+            "geocoding_source": "DEMO_OFFLINE_BENCHMARK_FALLBACK",
+            "is_live_geoapify": False
         }
 
     @staticmethod
     async def reverse_geocode(lat: float, lon: float) -> Dict[str, Any]:
         """Reverse geocode coordinates strictly using live Geoapify API."""
-        async with httpx.AsyncClient(timeout=12.0) as client:
-            params = {
-                "lat": lat,
-                "lon": lon,
-                "apiKey": settings.GEOAPIFY_API_KEY
-            }
-            try:
-                response = await client.get(GEOAPIFY_REVERSE_URL, params=params)
-                if response.status_code == 200:
-                    data = response.json()
-                    features = data.get("features", [])
-                    if features:
-                        props = features[0].get("properties", {})
-                        formatted = props.get("formatted") or "Current Location"
-                        city = props.get("city") or "Bengaluru"
-                        state = props.get("state") or "Karnataka"
-                        avg_price, price_range = calculate_price_estimate(formatted, lat, lon)
-                        return {
-                            "query": formatted,
-                            "formatted_address": formatted,
-                            "latitude": lat,
-                            "longitude": lon,
-                            "city": city,
-                            "state": state,
-                            "country": props.get("country", "India"),
-                            "postcode": props.get("postcode"),
-                            "place_id": props.get("place_id"),
-                            "estimated_price_sqft": avg_price,
-                            "price_range": price_range
-                        }
-            except Exception as e:
-                print(f"Geoapify Reverse error: {e}")
+        if GeoapifyService.is_configured():
+            async with httpx.AsyncClient(timeout=12.0) as client:
+                params = {
+                    "lat": lat,
+                    "lon": lon,
+                    "apiKey": settings.GEOAPIFY_API_KEY
+                }
+                try:
+                    response = await client.get(GEOAPIFY_REVERSE_URL, params=params)
+                    if response.status_code == 200:
+                        data = response.json()
+                        features = data.get("features", [])
+                        if features:
+                            props = features[0].get("properties", {})
+                            formatted = props.get("formatted") or "Current Location"
+                            city = props.get("city") or "Bengaluru"
+                            state = props.get("state") or "Karnataka"
+                            avg_price, price_range = calculate_price_estimate(formatted, lat, lon)
+                            return {
+                                "query": formatted,
+                                "formatted_address": formatted,
+                                "latitude": lat,
+                                "longitude": lon,
+                                "city": city,
+                                "state": state,
+                                "country": props.get("country", "India"),
+                                "postcode": props.get("postcode"),
+                                "place_id": props.get("place_id"),
+                                "estimated_price_sqft": avg_price,
+                                "price_range": price_range,
+                                "geocoding_source": "LIVE_GEOAPIFY",
+                                "is_live_geoapify": True
+                            }
+                except Exception as e:
+                    print(f"Geoapify Reverse error: {e}")
 
         avg_price, price_range = calculate_price_estimate("Current Location", lat, lon)
         return {
@@ -145,7 +159,9 @@ class GeoapifyService:
             "postcode": "560001",
             "place_id": "current_loc",
             "estimated_price_sqft": avg_price,
-            "price_range": price_range
+            "price_range": price_range,
+            "geocoding_source": "DEMO_OFFLINE_BENCHMARK_FALLBACK",
+            "is_live_geoapify": False
         }
 
     @staticmethod
@@ -213,7 +229,8 @@ class GeoapifyService:
                         "distance_meters": round(float(dist), 1),
                         "latitude": float(p_lat),
                         "longitude": float(p_lon),
-                        "address": address
+                        "address": address,
+                        "source": "LIVE_GEOAPIFY"
                     })
                 return places
         except Exception as e:
@@ -223,6 +240,10 @@ class GeoapifyService:
     @classmethod
     async def get_nearby_places(cls, lat: float, lon: float, radius_meters: int = 5000) -> List[Dict[str, Any]]:
         """Fetch nearby Schools, Hospitals, Metro, Bus Stops, Parks, Restaurants, Malls, Colleges, Banks via targeted Geoapify queries."""
+        if not cls.is_configured():
+            print("Geoapify API key not configured. Operating in DEMO / OFFLINE mode (returning empty live list; utilizing verified property places).")
+            return []
+
         category_taxonomy_map = {
             "Schools":        ["education.school"],
             "Colleges":       ["education.college", "education.university"],
@@ -324,6 +345,60 @@ class GeoapifyService:
         Query live Geoapify Routing API for Car (drive), Bike (bicycle), and Public Transit (transit).
         Returns genuine distances (km), travel times (minutes), and route statuses without fabricating numbers.
         """
+        if not cls.is_configured():
+            haversine = cls.haversine_distance(origin_lat, origin_lon, dest_lat, dest_lon) / 1000.0
+            car_dist = round(haversine * 1.3, 2)
+            car_mins = round((car_dist / 25.0) * 60, 1)
+            bike_dist = round(haversine * 1.2, 2)
+            bike_mins = round((bike_dist / 20.0) * 60, 1)
+            return {
+                "origin": {"latitude": origin_lat, "longitude": origin_lon},
+                "destination": {"latitude": dest_lat, "longitude": dest_lon},
+                "routes": {
+                    "car": {
+                        "mode": "car",
+                        "label": "Car / Cab",
+                        "status": "DEMO_OFFLINE_ESTIMATE",
+                        "distance_km": car_dist,
+                        "time_minutes": car_mins,
+                        "formatted_distance": f"{car_dist:.2f} km (est.)",
+                        "formatted_time": f"{round(car_mins)} mins (est.)",
+                        "error_message": "Geoapify API key not configured; estimated from straight-line road factor for demo mode.",
+                        "source": "DEMO_OFFLINE_FALLBACK"
+                    },
+                    "bike": {
+                        "mode": "bike",
+                        "label": "Two-Wheeler / Bike",
+                        "status": "DEMO_OFFLINE_ESTIMATE",
+                        "distance_km": bike_dist,
+                        "time_minutes": bike_mins,
+                        "formatted_distance": f"{bike_dist:.2f} km (est.)",
+                        "formatted_time": f"{round(bike_mins)} mins (est.)",
+                        "error_message": "Geoapify API key not configured; estimated from straight-line road factor for demo mode.",
+                        "source": "DEMO_OFFLINE_FALLBACK"
+                    },
+                    "transit": {
+                        "mode": "transit",
+                        "label": "Public Transit / Bus",
+                        "status": "PROVIDER_TRANSIT_UNAVAILABLE",
+                        "distance_km": None,
+                        "time_minutes": None,
+                        "formatted_distance": "N/A",
+                        "formatted_time": "N/A",
+                        "error_message": "Public transit routing requires live Geoapify API key or GTFS feed.",
+                        "source": "DEMO_OFFLINE_FALLBACK"
+                    }
+                },
+                "provider": "DEMO_OFFLINE_FALLBACK",
+                "is_live_geoapify": False,
+                "navigation_links": {
+                    "google_maps_car": f"https://www.google.com/maps/dir/?api=1&origin={origin_lat},{origin_lon}&destination={dest_lat},{dest_lon}&travelmode=driving",
+                    "google_maps_bike": f"https://www.google.com/maps/dir/?api=1&origin={origin_lat},{origin_lon}&destination={dest_lat},{dest_lon}&travelmode=bicycling",
+                    "google_maps_transit": f"https://www.google.com/maps/dir/?api=1&origin={origin_lat},{origin_lon}&destination={dest_lat},{dest_lon}&travelmode=transit",
+                    "openstreetmap": f"https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route={origin_lat}%2C{origin_lon}%3B{dest_lat}%2C{dest_lon}"
+                }
+            }
+
         modes_to_test = [
             ("car", "drive", "Car / Cab"),
             ("bike", "bicycle", "Two-Wheeler / Bike"),
@@ -414,6 +489,7 @@ class GeoapifyService:
             "destination": {"latitude": dest_lat, "longitude": dest_lon},
             "routes": routes,
             "provider": "Geoapify Routing API",
+            "is_live_geoapify": True,
             "navigation_links": {
                 "google_maps_car": f"https://www.google.com/maps/dir/?api=1&origin={origin_lat},{origin_lon}&destination={dest_lat},{dest_lon}&travelmode=driving",
                 "google_maps_bike": f"https://www.google.com/maps/dir/?api=1&origin={origin_lat},{origin_lon}&destination={dest_lat},{dest_lon}&travelmode=bicycling",

@@ -70,11 +70,11 @@ class TestSearchValidation(unittest.TestCase):
 
     def test_locality_plus_listing_type(self):
         """Verify locality + Listing type filters work strictly without leakage."""
-        res = list_properties(query="Koramangala", listing_type="Dataset", db=self.db)
-        self.assertTrue(len(res.items) > 0, "No properties matching Koramangala + Dataset type")
+        res = list_properties(query="Koramangala", listing_type="Buy", db=self.db)
+        self.assertTrue(len(res.items) > 0, "No properties matching Koramangala + Buy type")
         for item in res.items:
             self.assertIn("koramangala", item.locality.lower())
-            self.assertEqual(item.listing_type, "Dataset")
+            self.assertEqual(item.listing_type, "Buy")
 
 if __name__ == "__main__":
     unittest.main()

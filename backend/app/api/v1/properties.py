@@ -664,6 +664,8 @@ def list_properties(
     if limit is None: limit = 50
 
     q = db.query(Property)
+    # Exclude private properties from public listings
+    q = q.filter(or_(Property.visibility_status != "PRIVATE", Property.visibility_status.is_(None)))
     
     parsed_filters = {}
     if query and isinstance(query, str) and query.strip():

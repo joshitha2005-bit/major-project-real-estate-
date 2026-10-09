@@ -30,12 +30,12 @@ class TestPropertyListingIntegrity(unittest.TestCase):
     def test_02_exact_duplicates_are_removed(self):
         """2. Exact duplicates (same title+locality+price+bhk+area+source) are 0."""
         from sqlalchemy import func
-        dup_count = self.db.query(
+        dup_groups = self.db.query(
             Property.title, Property.locality, Property.price, Property.bhk, Property.area_sqft, Property.source
         ).group_by(
-            func.lower(Property.title), func.lower(Property.locality), Property.price, Property.bhk, Property.area_sqft, Property.source
-        ).having(func.count() > 1).count()
-        self.assertEqual(dup_count, 0, f"Found {dup_count} exact duplicate groups in database!")
+            Property.title, Property.locality, Property.price, Property.bhk, Property.area_sqft, Property.source
+        ).having(func.count() > 1).all()
+        self.assertEqual(len(dup_groups), 0, f"Found {len(dup_groups)} exact duplicate groups in database!")
 
     def test_03_card_detail_ids_and_fields_match(self):
         """3. Card/Detail IDs match exactly between database and API serializer."""
@@ -49,7 +49,7 @@ class TestPropertyListingIntegrity(unittest.TestCase):
 
     def test_04_no_random_image_assignment(self):
         """4. No random image pool assignment; missing images default to []."""
-        hist_props = self.db.query(Property).filter(Property.source_type == "historical_dataset").limit(20).all()
+        hist_props = self.db.query(Property).filter(Property.source_type.in_(["source_portal", "historical_dataset"])).limit(20).all()
         for p in hist_props:
             enriched = enrich_property_out(p)
             for img in enriched.images:

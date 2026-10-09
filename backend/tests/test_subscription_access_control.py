@@ -22,14 +22,16 @@ def client():
         yield c
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def db():
     session = SessionLocal()
-    yield session
-    session.close()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def test_property_id(db: Session):
     prop = db.query(Property).first()
     if not prop:
@@ -50,7 +52,7 @@ def test_property_id(db: Session):
     return prop.id
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def free_user(db: Session):
     user = db.query(User).filter(User.email == "test_free_user@example.com").first()
     if not user:
@@ -70,12 +72,12 @@ def free_user(db: Session):
     return user
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def free_user_token(free_user: User):
     return create_access_token(subject=free_user.id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def pro_user(db: Session):
     user = db.query(User).filter(User.email == "test_pro_user@example.com").first()
     if not user:
@@ -119,12 +121,12 @@ def pro_user(db: Session):
     return user
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def pro_user_token(pro_user: User):
     return create_access_token(subject=pro_user.id)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def admin_token(db: Session):
     admin = db.query(User).filter(User.role == "ADMIN").first()
     if not admin:

@@ -1,0 +1,70 @@
+{
+  "project": "GeoSmart Price AI",
+  "manifest_version": "1.0.0",
+  "architecture": "544-D Multimodal Fusion (6 Struct + 10 Geo + 16 NLP + 512 CNN)",
+  "primary_regressor": "XGBoost",
+  "explainability_engine": "TreeSHAP (shap.TreeExplainer)",
+  "vision_backbone": "PyTorch torchvision ResNet-18 (ResNet18_Weights.DEFAULT)",
+  "artifacts": [
+    {
+      "artifact_filename": "backend/models/multimodal_xgboost.joblib",
+      "sha256": "d68a1d1e77a197029f695cb38bb8c099001d0cf3b576795755e5777bd96351e0",
+      "size_bytes": 1006861,
+      "expected_feature_dimension": 544,
+      "model_type": "XGBoost Regressor (Trained on 544-D Multimodal Features)",
+      "version_metadata": "2.1.0-leakage-free-multimodal-resnet18-xgboost",
+      "description": "Primary multimodal XGBoost regression model trained on 544-D fused vectors",
+      "status": "VERIFIED_PRESENT"
+    },
+    {
+      "artifact_filename": "backend/models/multimodal_model_meta.json",
+      "sha256": "9ed3850f464e5b05dd08bfad9f7920bcb9b0e0147c9b370dd7ba00067db4c64a",
+      "size_bytes": 16947,
+      "expected_feature_dimension": 544,
+      "model_type": "Model Metadata & Locality Target Encoding Dictionary",
+      "version_metadata": "2.1.0-leakage-free-multimodal-resnet18-xgboost",
+      "description": "Multimodal model metadata, feature names list, and training-only locality target encoding map",
+      "status": "VERIFIED_PRESENT"
+    },
+    {
+      "artifact_filename": "backend/models/tfidf_vectorizer.pkl",
+      "sha256": "6833b286f9cdafb8a6e3c2c9dad1c7fda39b493cb517611f3c5463a645921704",
+      "size_bytes": 5808,
+      "expected_feature_dimension": 16,
+      "model_type": "Scikit-Learn TfidfVectorizer",
+      "version_metadata": "1.0.0-bengaluru-corpus-tfidf",
+      "description": "Pre-fitted TF-IDF vectorizer extracting 16-D textual features from property descriptions",
+      "status": "VERIFIED_PRESENT"
+    },
+    {
+      "artifact_filename": "backend/models/price_model.pkl",
+      "sha256": "d905d4627b253d862bbe945117bee3c74f4ed6d5ae89cd2f3f12008df4a3ebe3",
+      "size_bytes": 1125842,
+      "expected_feature_dimension": 6,
+      "model_type": "Scikit-Learn Tabular Pipeline (Baseline Model)",
+      "version_metadata": "1.0.0-tabular-baseline",
+      "description": "Tabular 6-D baseline XGBoost pipeline used for comparison and fallback",
+      "status": "VERIFIED_PRESENT"
+    },
+    {
+      "artifact_filename": "backend/models/price_model_meta.json",
+      "sha256": "30ee7270ca70c5ac98db6e70677e4d334de5b7d3eef2141866867ffbee42fc0c",
+      "size_bytes": 898,
+      "expected_feature_dimension": 6,
+      "model_type": "Baseline Metadata",
+      "version_metadata": "1.0.0-tabular-baseline",
+      "description": "Baseline model metadata and tabular feature definitions",
+      "status": "VERIFIED_PRESENT"
+    },
+    {
+      "artifact_filename": "backend/models/geo_training_cache.json",
+      "sha256": "ea110f6e67a79c3eaa832110521dd0b6a34d8557dfc19c9602ce157d1ca9c330",
+      "size_bytes": 454503,
+      "expected_feature_dimension": 10,
+      "model_type": "Geospatial Cache",
+      "version_metadata": "1.0.0-geoapify-pois-cache",
+      "description": "Deterministic Geoapify 10-D POI counts cache for training properties",
+      "status": "VERIFIED_PRESENT"
+    }
+  ]
+}

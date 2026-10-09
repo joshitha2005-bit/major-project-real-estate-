@@ -20,12 +20,15 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     
+    # Mode configuration
+    DEMO_MODE: bool = os.getenv("DEMO_MODE", "true").lower() in ("true", "1")
+    
     # Database
     _DEFAULT_DB_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "real_estate.db")
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{_DEFAULT_DB_FILE.replace(chr(92), '/')}")
     
     # Geoapify GIS API Key (Loaded strictly from env variable GEOAPIFY_API_KEY)
-    GEOAPIFY_API_KEY: str = os.getenv("GEOAPIFY_API_KEY", "7e57c95ce01147f38a78dab8029c635a")
+    GEOAPIFY_API_KEY: str = os.getenv("GEOAPIFY_API_KEY", "")
     
     # Google Maps API Configuration
     GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY", "")

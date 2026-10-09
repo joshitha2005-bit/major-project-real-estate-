@@ -20,47 +20,57 @@ def client():
         yield c
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def db():
     session = SessionLocal()
-    yield session
-    session.close()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
-@pytest.fixture(scope="module")
-def admin_token(db: Session):
-    admin = db.query(User).filter(User.role == "ADMIN").first()
-    if not admin:
-        admin = User(
-            email=settings.PRIVATE_ADMIN_EMAIL,
-            full_name="Test Administrator",
-            hashed_password=get_password_hash(settings.PRIVATE_ADMIN_PASSWORD),
-            role="ADMIN",
-            is_active=True
-        )
-        db.add(admin)
-        db.commit()
-        db.refresh(admin)
-    token = create_access_token(subject=admin.id)
-    return token
+@pytest.fixture
+def admin_token():
+    session = SessionLocal()
+    try:
+        admin = session.query(User).filter(User.role == "ADMIN").first()
+        if not admin:
+            admin = User(
+                email=settings.PRIVATE_ADMIN_EMAIL,
+                full_name="Test Administrator",
+                hashed_password=get_password_hash(settings.PRIVATE_ADMIN_PASSWORD),
+                role="ADMIN",
+                is_active=True
+            )
+            session.add(admin)
+            session.commit()
+            session.refresh(admin)
+        token = create_access_token(subject=admin.id)
+        return token
+    finally:
+        session.close()
 
 
-@pytest.fixture(scope="module")
-def normal_user_token(db: Session):
-    user = db.query(User).filter(User.role == "USER").first()
-    if not user:
-        user = User(
-            email="regular.user@example.com",
-            full_name="Regular Public User",
-            hashed_password=get_password_hash("UserPass@1234"),
-            role="USER",
-            is_active=True
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    token = create_access_token(subject=user.id)
-    return token
+@pytest.fixture
+def normal_user_token():
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.role == "USER").first()
+        if not user:
+            user = User(
+                email="regular.user@example.com",
+                full_name="Regular Public User",
+                hashed_password=get_password_hash("UserPass@1234"),
+                role="USER",
+                is_active=True
+            )
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+        token = create_access_token(subject=user.id)
+        return token
+    finally:
+        session.close()
 
 
 # ==============================================================
@@ -191,7 +201,11 @@ def test_private_owner_contact_isolation(client: TestClient, admin_token: str, d
     """
     Verify private owner contacts are visible only to admin and never exposed publicly.
     """
-    prop = db.query(Property).first()
+    # Select a property that is associated with an existing PrivateOwnerContact
+    owner_contact = db.query(PrivateOwnerContact).first()
+    assert owner_contact is not None, "Authoritative database must contain at least one PrivateOwnerContact"
+    prop = db.query(Property).filter(Property.id == owner_contact.property_id).first()
+    assert prop is not None, f"Property #{owner_contact.property_id} associated with owner contact must exist"
     # Admin accesses property detail with owner contact
     admin_resp = client.get(
         f"{settings.API_V1_STR}/admin/properties/{prop.id}",
@@ -322,6 +336,22 @@ def test_lead_approval_and_honest_owner_send(client: TestClient, admin_token: st
     """
     lead = db.query(AILead).filter(AILead.validation_status == "VALID").first()
     assert lead is not None
+
+    # Ensure a verified owner contact exists so notification configuration is tested
+    contact = db.query(PrivateOwnerContact).filter(PrivateOwnerContact.property_id == lead.property_id).first()
+    if not contact:
+        contact = PrivateOwnerContact(
+            property_id=lead.property_id,
+            contact_name="Verified Owner",
+            phone="+919876543210",
+            contact_type="OWNER",
+            verification_status="VERIFIED"
+        )
+        db.add(contact)
+        db.commit()
+    elif contact.verification_status != "VERIFIED":
+        contact.verification_status = "VERIFIED"
+        db.commit()
 
     # Approve
     appr_resp = client.post(

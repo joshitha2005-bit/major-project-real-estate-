@@ -11,10 +11,15 @@ dist/
 # Environment
 .env
 .env.*
+!.env.example
 backend/.env
 backend/.env.*
+!backend/.env.example
 frontend/.env
 frontend/.env.*
+!frontend/.env.example
+render.env
+render.env.*
 
 # Large Cache Folders & Embeddings Cache
 backend/models/image_cache/
@@ -35,7 +40,13 @@ npm-debug.log*
 .vscode/*
 !.vscode/launch.json
 
-# Large Datasets
+# Large Datasets & Archives
 *.zip
-*.pkl
+*.tar.gz
+*.tgz
+
+# Preserve Model Artifacts
+!backend/models/*.pkl
+!backend/models/*.joblib
+!backend/models/*.json
 
