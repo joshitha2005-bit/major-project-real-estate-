@@ -528,41 +528,41 @@ export const DashboardPage = () => {
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase font-bold text-slate-500 block">Database Provenance</span>
-                    <span className="text-xs font-bold text-brand-300">Dataset ({dashboardStats.dataset_listings}) | Direct ({dashboardStats.verified_direct + allProperties.filter(p => p.verification_status === 'Pending Verification').length})</span>
+                    <span className="text-xs font-bold text-brand-300">Dataset ({dashboardStats?.dataset_listings || 0}) | Direct ({(dashboardStats?.verified_direct || 0) + (allProperties || []).filter(p => p.verification_status === 'Pending Verification').length})</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                   <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-slate-500">Total Listings</span>
-                    <p className="text-2xl font-black text-white">{dashboardStats.total_properties}</p>
+                    <p className="text-2xl font-black text-white">{dashboardStats?.total_properties ?? 0}</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-slate-500">Buy Listings</span>
-                    <p className="text-2xl font-black text-emerald-400">{dashboardStats.buy_properties}</p>
+                    <p className="text-2xl font-black text-emerald-400">{dashboardStats?.buy_properties ?? 0}</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-slate-500">Rent Listings</span>
-                    <p className="text-2xl font-black text-accent-400">{dashboardStats.rent_properties}</p>
+                    <p className="text-2xl font-black text-accent-400">{dashboardStats?.rent_properties ?? 0}</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-slate-500">Apartments</span>
-                    <p className="text-2xl font-black text-blue-400">{dashboardStats.apartments}</p>
+                    <p className="text-2xl font-black text-blue-400">{dashboardStats?.apartments ?? 0}</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-slate-500">Villas & Houses</span>
-                    <p className="text-2xl font-black text-purple-400">{dashboardStats.villas + dashboardStats.independent_houses}</p>
+                    <p className="text-2xl font-black text-purple-400">{(dashboardStats?.villas || 0) + (dashboardStats?.independent_houses || dashboardStats?.houses || 0)}</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-850 space-y-1">
                     <span className="text-[10px] uppercase font-bold text-slate-500">Localities</span>
-                    <p className="text-2xl font-black text-amber-400">{dashboardStats.localities_covered}</p>
+                    <p className="text-2xl font-black text-amber-400">{dashboardStats?.localities_covered ?? 0}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3 pt-2">
                   <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Top Market Densities by Locality</span>
                   <div className="flex flex-wrap gap-2">
-                    {dashboardStats.top_localities.slice(0, 8).map((item, idx) => (
+                    {(dashboardStats?.top_localities || []).slice(0, 8).map((item, idx) => (
                       <button
                         key={idx}
                         onClick={() => {
@@ -675,19 +675,19 @@ export const DashboardPage = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850">
                       <span className="text-[9px] uppercase font-bold text-slate-500 block">Dataset Listings</span>
-                      <span className="text-base font-extrabold text-white">{datasetStats.dataset_listings}</span>
+                      <span className="text-base font-extrabold text-white">{datasetStats?.dataset_listings ?? 0}</span>
                     </div>
                     <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850">
                       <span className="text-[9px] uppercase font-bold text-slate-500 block">Direct Postings</span>
-                      <span className="text-base font-extrabold text-white">{datasetStats.direct_listings}</span>
+                      <span className="text-base font-extrabold text-white">{datasetStats?.direct_listings ?? 0}</span>
                     </div>
                     <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850">
                       <span className="text-[9px] uppercase font-bold text-slate-500 block">Unmapped Geocoding</span>
-                      <span className="text-base font-extrabold text-amber-500">{datasetStats.missing_coordinates}</span>
+                      <span className="text-base font-extrabold text-amber-500">{datasetStats?.missing_coordinates ?? 0}</span>
                     </div>
                     <div className="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-850">
                       <span className="text-[9px] uppercase font-bold text-slate-500 block">No Image Listings</span>
-                      <span className="text-base font-extrabold text-slate-450">{datasetStats.missing_images}</span>
+                      <span className="text-base font-extrabold text-slate-450">{datasetStats?.missing_images ?? 0}</span>
                     </div>
                   </div>
 
@@ -695,7 +695,7 @@ export const DashboardPage = () => {
                     <div className="space-y-2">
                       <span className="text-[10px] uppercase font-bold text-slate-500 block">Listings Source Distribution</span>
                       <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
-                        {datasetStats.source_distribution.map((src, idx) => (
+                        {(datasetStats?.source_distribution || []).map((src, idx) => (
                           <div key={idx} className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-slate-950 border border-slate-850">
                             <span className="text-slate-300 font-medium">{src.source}</span>
                             <span className="font-extrabold text-brand-400">{src.count}</span>
@@ -706,7 +706,7 @@ export const DashboardPage = () => {
                     <div className="space-y-2">
                       <span className="text-[10px] uppercase font-bold text-slate-500 block">Localities Data Distribution</span>
                       <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-1">
-                        {datasetStats.locality_distribution.slice(0, 10).map((loc, idx) => (
+                        {(datasetStats?.locality_distribution || []).slice(0, 10).map((loc, idx) => (
                           <div key={idx} className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl bg-slate-950 border border-slate-850">
                             <span className="text-slate-300 font-medium">{loc.locality}</span>
                             <span className="font-extrabold text-brand-400">{loc.count}</span>

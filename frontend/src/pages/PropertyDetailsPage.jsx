@@ -1384,6 +1384,7 @@ export const PropertyDetailsPage = () => {
                     </span>
                   </div>
                   <div className="pt-2">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Estimated driving time</span>
                     <p className="text-2xl font-extrabold text-white font-mono">
                       {routesData?.routes?.car?.formatted_time || '11.9 mins'}
                     </p>
@@ -1392,7 +1393,7 @@ export const PropertyDetailsPage = () => {
                     </p>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Fastest motorable route via primary Bangalore arterial roads.
+                    Estimated driving time via road network speed limits. Actual travel time may vary with traffic conditions.
                   </p>
                 </div>
                 <button
@@ -1419,6 +1420,7 @@ export const PropertyDetailsPage = () => {
                     </span>
                   </div>
                   <div className="pt-2">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Estimated riding time</span>
                     <p className="text-2xl font-extrabold text-white font-mono">
                       {routesData?.routes?.bike?.formatted_time || '34.6 mins'}
                     </p>
@@ -1427,7 +1429,7 @@ export const PropertyDetailsPage = () => {
                     </p>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Shortest two-wheeler route optimized for local streets and shortcuts.
+                    Estimated riding time for two-wheelers. Actual travel time may vary with traffic conditions.
                   </p>
                 </div>
                 <button
@@ -1460,6 +1462,7 @@ export const PropertyDetailsPage = () => {
                   <div className="pt-2">
                     {routesData?.routes?.transit?.status === 'AVAILABLE' ? (
                       <>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Estimated transit time</span>
                         <p className="text-2xl font-extrabold text-white font-mono">
                           {routesData.routes.transit.formatted_time}
                         </p>
@@ -1490,6 +1493,12 @@ export const PropertyDetailsPage = () => {
 
             </div>
           )}
+
+          {/* Traffic disclaimer banner */}
+          <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-start sm:items-center gap-2.5 text-xs text-slate-400">
+            <Info className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+            <span><strong>Routing Notice:</strong> Durations are calculated using speed limits on the OpenStreetMap/Geoapify road network. Actual travel time may vary with traffic conditions, weather, and peak road hours in Bengaluru.</span>
+          </div>
 
           <div className="pt-3 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-400 font-mono">
             <span>Destination: {property.latitude.toFixed(6)}, {property.longitude.toFixed(6)}</span>

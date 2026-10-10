@@ -791,13 +791,19 @@ def list_properties(
 
 @router.get("/dashboard-stats")
 def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Return live dataset statistics across historical, demo, and owner listings."""
+    """Return live dataset statistics across historical, demo, and owner listings with locality distributions."""
+    from sqlalchemy import func
+
     total = db.query(Property).count()
     historical = db.query(Property).filter(Property.source_type == "historical_dataset").count()
     demo = db.query(Property).filter(Property.source_type == "demo_dataset").count()
     owner = db.query(Property).filter(Property.source_type == "owner_listing").count()
-    buy_count = db.query(Property).filter(Property.transaction_type == "sale").count()
-    rent_count = db.query(Property).filter(Property.transaction_type == "rent").count()
+    buy_count = db.query(Property).filter(
+        (Property.transaction_type == "sale") | (Property.listing_type.ilike("Buy"))
+    ).count()
+    rent_count = db.query(Property).filter(
+        (Property.transaction_type == "rent") | (Property.listing_type.ilike("Rent"))
+    ).count()
     exact_count = db.query(Property).filter(Property.coordinate_quality == "EXACT").count()
     approx_count = db.query(Property).filter(Property.coordinate_quality == "LOCALITY_APPROXIMATE").count()
     
@@ -809,6 +815,19 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     villas = db.query(Property).filter(Property.property_type.ilike("%Villa%")).count()
     houses = db.query(Property).filter(Property.property_type.ilike("%House%")).count()
     plots = db.query(Property).filter(Property.property_type.ilike("%Plot%")).count()
+    
+    localities_covered = db.query(Property.locality).distinct().count()
+
+    # Top localities count for executive dashboard
+    top_loc_query = (
+        db.query(Property.locality, func.count(Property.id))
+        .filter(Property.locality.isnot(None), Property.locality != "")
+        .group_by(Property.locality)
+        .order_by(func.count(Property.id).desc())
+        .limit(10)
+        .all()
+    )
+    top_localities = [{"name": loc or "Unknown", "count": count} for loc, count in top_loc_query]
     
     return {
         "total_properties": total,
@@ -827,13 +846,64 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "apartments": apartments,
         "villas": villas,
         "houses": houses,
-        "plots": plots
+        "independent_houses": houses,
+        "plots": plots,
+        "localities_covered": localities_covered,
+        "top_localities": top_localities
     }
 
 @router.get("/dataset-stats")
 def get_dataset_stats(db: Session = Depends(get_db)):
-    """Return metadata breakdown for catalog datasets."""
-    return get_dashboard_stats(db)
+    """Retrieve data quality statistics and distributions for admin review."""
+    from sqlalchemy import func
+
+    total_properties = db.query(Property).count()
+    dataset_listings = db.query(Property).filter(Property.source_type == "historical_dataset").count()
+    direct_listings = db.query(Property).filter(Property.source_type.in_(["owner_listing", "demo_dataset"])).count()
+
+    missing_coords = db.query(Property).filter(
+        Property.latitude.between(12.95, 12.99),
+        Property.longitude.between(77.57, 77.61)
+    ).count()
+
+    missing_images = db.query(Property).filter(
+        (Property.images.is_(None)) |
+        (Property.image_count == 0) |
+        (Property.image_count.is_(None))
+    ).count()
+
+    missing_contact = db.query(Property).filter(
+        (Property.owner_phone == "") | (Property.owner_phone.is_(None))
+    ).count()
+
+    locality_dist = (
+        db.query(Property.locality, func.count(Property.id))
+        .filter(Property.locality.isnot(None), Property.locality != "")
+        .group_by(Property.locality)
+        .order_by(func.count(Property.id).desc())
+        .limit(15)
+        .all()
+    )
+    locality_distribution = [{"locality": loc or "Unknown", "count": count} for loc, count in locality_dist]
+
+    source_dist = (
+        db.query(Property.source, func.count(Property.id))
+        .filter(Property.source.isnot(None))
+        .group_by(Property.source)
+        .all()
+    )
+    source_distribution = [{"source": src or "Unknown", "count": count} for src, count in source_dist]
+
+    return {
+        "total_properties": total_properties,
+        "dataset_listings": dataset_listings,
+        "direct_listings": direct_listings,
+        "missing_coordinates": missing_coords,
+        "missing_images": missing_images,
+        "missing_contact": missing_contact,
+        "locality_distribution": locality_distribution,
+        "source_distribution": source_distribution
+    }
 
 
 @router.get("/{id}", response_model=PropertyOut)
@@ -1302,97 +1372,9 @@ def get_property_contact_details(
         "contact_display_permission": contact_info["contact_display_permission"],
         "source_platform": contact_info["source_platform"],
         "source_listing_id": contact_info["source_listing_id"],
-        "source_listing_url": contact_info["source_listing_url"],
         "display_message": contact_info["display_message"]
     }
 
-@router.get("/dashboard-stats")
-def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Retrieve aggregate database statistics for the main dashboard dashboard."""
-    from sqlalchemy import func
-    
-    total_properties = db.query(Property).count()
-    buy_properties = db.query(Property).filter(Property.listing_type.ilike("Buy")).count()
-    rent_properties = db.query(Property).filter(Property.listing_type.ilike("Rent")).count()
-    
-    apartments = db.query(Property).filter(Property.property_type.ilike("Apartment")).count()
-    villas = db.query(Property).filter(Property.property_type.ilike("Villa")).count()
-    independent_houses = db.query(Property).filter(Property.property_type.ilike("Independent House")).count()
-    
-    localities_covered = db.query(Property.locality).distinct().count()
-    
-    verified_direct = db.query(Property).filter(
-        Property.source_type == "owner_listing",
-        Property.verification_status == "Verified"
-    ).count()
-    
-    dataset_listings = db.query(Property).filter(
-        Property.source_type == "historical_dataset"
-    ).count()
-    
-    # Top localities count
-    top_loc_query = db.query(Property.locality, func.count(Property.id)).group_by(Property.locality).order_by(func.count(Property.id).desc()).limit(10).all()
-    top_localities = [{"name": loc or "Unknown", "count": count} for loc, count in top_loc_query]
-    
-    return {
-        "total_properties": total_properties,
-        "buy_properties": buy_properties,
-        "rent_properties": rent_properties,
-        "apartments": apartments,
-        "villas": villas,
-        "independent_houses": independent_houses,
-        "localities_covered": localities_covered,
-        "verified_direct": verified_direct,
-        "dataset_listings": dataset_listings,
-        "top_localities": top_localities
-    }
-
-@router.get("/dataset-stats")
-def get_dataset_stats(
-    current_user: User = Depends(get_current_user_with_role("ADMIN")),
-    db: Session = Depends(get_db)
-):
-    """Retrieve data quality statistics for admin review."""
-    from sqlalchemy import func
-    
-    total_properties = db.query(Property).count()
-    dataset_listings = db.query(Property).filter(Property.source_type == "historical_dataset").count()
-    direct_listings = db.query(Property).filter(Property.source_type == "owner_listing").count()
-    
-    # Missing coordinates ( बेंगलुरु center check )
-    missing_coords = db.query(Property).filter(
-        Property.latitude.between(12.95, 12.99),
-        Property.longitude.between(77.57, 77.61)
-    ).count()
-    
-    # Missing images
-    missing_images = db.query(Property).filter(
-        (Property.images == "[]") | (Property.images == "") | (Property.images.is_(None))
-    ).count()
-    
-    # Missing contact
-    missing_contact = db.query(Property).filter(
-        (Property.owner_phone == "") | (Property.owner_phone.is_(None))
-    ).count()
-    
-    # Locality distribution
-    locality_dist = db.query(Property.locality, func.count(Property.id)).group_by(Property.locality).order_by(func.count(Property.id).desc()).limit(15).all()
-    locality_distribution = [{"locality": loc or "Unknown", "count": count} for loc, count in locality_dist]
-    
-    # Source distribution
-    source_dist = db.query(Property.source, func.count(Property.id)).group_by(Property.source).all()
-    source_distribution = [{"source": src or "Unknown", "count": count} for src, count in source_dist]
-    
-    return {
-        "total_properties": total_properties,
-        "dataset_listings": dataset_listings,
-        "direct_listings": direct_listings,
-        "missing_coordinates": missing_coords,
-        "missing_images": missing_images,
-        "missing_contact": missing_contact,
-        "locality_distribution": locality_distribution,
-        "source_distribution": source_distribution
-    }
 
 
 

@@ -415,9 +415,9 @@ export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [], prop
                   <MapPin className="w-6 h-6 text-slate-400" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-white">Street View imagery is unavailable at this location.</h4>
+                  <h4 className="text-sm font-bold text-white">Street View unavailable</h4>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Exact navigation and high-precision OpenStreetMap / Google Maps views remain fully available.
+                    360° photographic Street View imagery is not available at these coordinates. You can return directly to the interactive Leaflet map or view in Google Maps.
                   </p>
                 </div>
 
@@ -436,27 +436,27 @@ export const MapView = ({ searchResult, currentLocation, nearbyPlaces = [], prop
                 {lat && lon && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                     <button
-                      onClick={() => navigateToProperty(navTarget)}
-                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20"
+                      onClick={handleBackToMap}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-brand-600/20"
                     >
-                      <Navigation className="w-3.5 h-3.5" />
-                      <span>{disp.isExact ? "Navigate to Property" : "Directions to Area"}</span>
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span>Open Map</span>
                     </button>
 
                     <button
                       onClick={() => openInGoogleMaps({ latitude: lat, longitude: lon })}
-                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 text-xs font-semibold rounded-xl transition-all"
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl transition-all"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      <span>{disp.isExact ? "Open Exact Location" : "View Area on Map"}</span>
+                      <span>View in Google Maps</span>
                     </button>
 
                     <button
-                      onClick={() => openInOpenStreetMap({ latitude: lat, longitude: lon })}
-                      className="col-span-1 sm:col-span-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition-all"
+                      onClick={() => navigateToProperty(navTarget)}
+                      className="col-span-1 sm:col-span-2 inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold rounded-xl transition-all"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-sky-400" />
-                      <span>Open in OpenStreetMap</span>
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>{disp.isExact ? "Navigate to Property" : "Directions to Area"}</span>
                     </button>
                   </div>
                 )}
