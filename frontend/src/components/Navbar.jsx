@@ -30,7 +30,7 @@ export const Navbar = () => {
                 Real Estate <span className="gradient-text">AI</span>
               </span>
               <span className="block text-[10px] uppercase font-bold tracking-widest text-brand-500">
-                GIS Intelligence
+                Cloud-Based Analysis
               </span>
             </div>
           </Link>

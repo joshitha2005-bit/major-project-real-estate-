@@ -1,5 +1,5 @@
 """
-GeoSmart Price AI - Demo Database Initialization Script
+Cloud-Based Real Estate Analysis - Demo Database Initialization Script
 Reproducible, credential-free initialization for clean machines.
 Creates all database tables, seeds verified bank loan products,
 sets up demo credentials, and ensures golden properties exist.
@@ -32,7 +32,7 @@ from app.services.loan_seed_data import VERIFIED_BANK_PRODUCTS
 
 def init_database():
     print("=" * 65)
-    print("GEOSMART PRICE AI -- REPRODUCIBLE DEMO DATABASE INITIALIZATION")
+    print("CLOUD-BASED REAL ESTATE ANALYSIS -- REPRODUCIBLE DEMO DB INIT")
     print("=" * 65)
     clean_db_target = settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else settings.DATABASE_URL
     print(f"Target Database URL: {clean_db_target}")
@@ -53,7 +53,7 @@ def init_database():
             admin_user = User(
                 email=admin_email,
                 hashed_password=get_password_hash(settings.PRIVATE_ADMIN_PASSWORD),
-                full_name="GeoSmart Admin",
+                full_name="Platform Admin",
                 role="ADMIN",
                 is_active=True
             )
@@ -64,7 +64,7 @@ def init_database():
         else:
             print(f"  [OK] Admin account already present: {admin_email}")
 
-        demo_email = "demo@geosmart.ai"
+        demo_email = "demo@cloudrealestate.ai"
         demo_user = db.query(User).filter(User.email == demo_email).first()
         if not demo_user:
             demo_user = User(

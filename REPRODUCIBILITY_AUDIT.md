@@ -1,4 +1,4 @@
-# GEOSMART PRICE AI — REPRODUCIBILITY AUDIT REPORT
+# CLOUD-BASED REAL ESTATE ANALYSIS — REPRODUCIBILITY AUDIT REPORT
 
 **Audit Date**: October 2026  
 **Platform**: Windows 11 / PowerShell / Multi-Platform Container Ready  

@@ -1,5 +1,5 @@
 """
-Golden Reproducibility Test Suite for GeoSmart Price AI
+Golden Reproducibility Test Suite for Cloud-Based Real Estate Analysis
 Verifies exact 544-D Multimodal Feature Vector assembly, XGBoost regression,
 and TreeSHAP explainability across clean machine installations.
 """

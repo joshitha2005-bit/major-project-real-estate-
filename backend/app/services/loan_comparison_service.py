@@ -1,5 +1,5 @@
 """
-GeoSmart Price AI - Home Loan & Bank Comparison Service
+Cloud-Based Real Estate Analysis - Home Loan & Bank Comparison Service
 Production-ready calculation, eligibility evaluation, and multi-bank comparison engine.
 """
 

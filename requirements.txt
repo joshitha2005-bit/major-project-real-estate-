@@ -1,2 +1,2 @@
-# GeoSmart Price AI - Root Requirements Redirect
+# Cloud-Based Real Estate Analysis - Root Requirements Redirect
 -r backend/requirements.txt

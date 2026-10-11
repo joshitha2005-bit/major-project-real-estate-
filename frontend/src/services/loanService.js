@@ -30,7 +30,7 @@ export const loanService = {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `GeoSmart_Home_Loan_Report_Prop_${propertyId || 'General'}.pdf`);
+    link.setAttribute('download', `Cloud_Based_Real_Estate_Analysis_Loan_Report_Prop_${propertyId || 'General'}.pdf`);
     document.body.appendChild(link);
     link.click();
     link.parentNode.removeChild(link);

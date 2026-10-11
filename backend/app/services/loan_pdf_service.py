@@ -1,5 +1,5 @@
 """
-GeoSmart Price AI - Home Loan PDF Report Generator
+Cloud-Based Real Estate Analysis - Home Loan PDF Report Generator
 Generates a downloadable, high-fidelity PDF mortgage comparison report using ReportLab.
 """
 
@@ -99,7 +99,7 @@ class LoanPdfService:
         elements = []
 
         # 1. Header & Branding Banner
-        elements.append(Paragraph("GeoSmart Price AI — Home Loan & Mortgage Evaluation Report", title_style))
+        elements.append(Paragraph("Cloud-Based Real Estate Analysis — Home Loan & Mortgage Evaluation Report", title_style))
         elements.append(Paragraph(f"Generated on: {datetime.now(timezone.utc).strftime('%B %d, %Y, %H:%M UTC')} | Verified Banking Data (October 2026)", subtitle_style))
         elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#0284C7'), spaceBefore=0, spaceAfter=10))
 
@@ -248,7 +248,7 @@ class LoanPdfService:
             "<b>STATUTORY DISCLAIMER & DATA SOURCING:</b> "
             "All interest rates, processing fees, indicative eligibility evaluations, and EMI projections depicted herein "
             "are compiled strictly from verified public disclosures and official bank publications as of October 2026. "
-            "GeoSmart Price AI is an analytical technology platform and not a licensed financial advisor, loan broker, or credit institution. "
+            "Cloud-Based Real Estate Analysis is an analytical technology platform and not a licensed financial advisor, loan broker, or credit institution. "
             "Indicative eligibility does NOT constitute formal credit sanction or an offer of financing. "
             "Final sanction, applicable interest rate, loan amount, and underwriting terms are subject to formal application, "
             "CIBIL credit score evaluation, income documentation, and property legal title verification by the respective lending institution.",

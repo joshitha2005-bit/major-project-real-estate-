@@ -789,7 +789,7 @@ export default function HomeLoanPlanner({ property, onClose }) {
           <p className="leading-relaxed">
             All interest rates, EMI calculations, processing fees, and eligibility assessments shown are indicative 
             and based on verified public bank disclosures as of October 2026. 
-            GeoSmart Price AI does not guarantee loan sanction. Final approval, applicable interest rates, 
+            Cloud-Based Real Estate Analysis does not guarantee loan sanction. Final approval, applicable interest rates, 
             and loan terms are determined solely by the respective lending institution based on individual 
             CIBIL credit scoring, income verification, and legal title evaluation.
           </p>

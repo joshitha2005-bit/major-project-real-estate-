@@ -1,4 +1,4 @@
-# GeoSmart Price AI: Smart Home Loan & Multi-Bank Evaluation Module
+# Cloud-Based Real Estate Analysis: Smart Home Loan & Multi-Bank Evaluation Module
 
 **Technical Architecture, Financial Methodology, and Sourcing Documentation**  
 **Published:** October 2026  
@@ -14,13 +14,13 @@ Real-estate valuation and property acquisition in India involve a substantial ga
 3. **Rigid or Misleading Approval Claims:** Commercial platforms frequently claim "instant pre-approval" or universally rank one bank as "the best," ignoring individual borrower constraints like Fixed Obligation to Income Ratio (FOIR), existing debt obligations, and age limits at loan maturity.
 4. **RBI Regulatory Non-Compliance:** Many calculators disregard the Reserve Bank of India's (RBI) mandatory Loan-to-Value (LTV) limits, leading buyers to budget for unrealistic 95% financing on high-ticket luxury assets.
 
-**GeoSmart Price AI addresses this by providing an integrated, transparent, property-linked home-loan evaluation module that computes exact mathematical amortizations, compares verified public banking datasets, evaluates indicative FOIR and LTV constraints, and generates downloadable official PDF reports.**
+**Cloud-Based Real Estate Analysis addresses this by providing an integrated, transparent, property-linked home-loan evaluation module that computes exact mathematical amortizations, compares verified public banking datasets, evaluates indicative FOIR and LTV constraints, and generates downloadable official PDF reports.**
 
 ---
 
 ## 2. Architecture & System Design
 
-The Home Loan Evaluation module is designed as an independent, decoupled micro-service integrated within the GeoSmart Price AI ecosystem.
+The Home Loan Evaluation module is designed as an independent, decoupled micro-service integrated within the Cloud-Based Real Estate Analysis ecosystem.
 
 ```
    +-------------------------------------------------------------+
@@ -161,8 +161,8 @@ The module features a server-side PDF generation pipeline utilizing Python's `re
 ## 8. Statutory Financial Disclaimer
 
 > **DISCLAIMER:**  
-> All interest rates, EMI projections, processing fees, indicative eligibility evaluations, and regulatory benchmarks provided by the GeoSmart Price AI Home Loan Module are compiled strictly from public bank disclosures and official publications as of October 2026.  
-> GeoSmart Price AI is an analytical research and technological platform and does not operate as a credit broker, financial advisor, or lending institution.  
+> All interest rates, EMI projections, processing fees, indicative eligibility evaluations, and regulatory benchmarks provided by the Cloud-Based Real Estate Analysis Home Loan Module are compiled strictly from public bank disclosures and official publications as of October 2026.  
+> Cloud-Based Real Estate Analysis is an analytical research and technological platform and does not operate as a credit broker, financial advisor, or lending institution.  
 > Indicative eligibility does not constitute formal loan sanction or an offer of credit. Final loan approval, applicable interest rates, margin requirements, and tenure are strictly determined by the respective lending institution following credit bureau checks, income verification, and property legal title verification.
 
 ---

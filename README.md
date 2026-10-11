@@ -1,4 +1,4 @@
-# GeoSmart Price AI: Cloud-Deployed Multi-Modal Framework for Real Estate Price Prediction
+# Cloud-Based Real Estate Analysis
 
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)](#)
 [![Backend Tests](https://img.shields.io/badge/Tests-191%20Passed-success?style=flat-square)](#)
@@ -10,7 +10,7 @@
 
 ## 1. Project Overview
 
-**GeoSmart Price AI** (PropPulse) is an end-to-end, reproducible research and production framework for real estate valuation and geospatial intelligence in the Bengaluru metropolitan area. The platform replaces traditional single-modality property appraisal by synthesizing:
+**Cloud-Based Real Estate Analysis** is an end-to-end, reproducible research and production framework for real estate valuation and geospatial intelligence in the Bengaluru metropolitan area. The platform replaces traditional single-modality property appraisal by synthesizing:
 - **Architectural / Tabular Specifications**: BHK, built-up area, bathrooms, balconies, locality micro-market pricing, and building vintage.
 - **Geospatial & Civic GIS Density**: Multi-category point-of-interest (POI) radius queries across schools, colleges, hospitals, Namma Metro transit, BMTC bus stations, dining, and commercial centers.
 - **Semantic Natural Language (NLP)**: High-dimensional TF-IDF listing text descriptors capturing property amenities, luxury specifications, and builder highlights.
@@ -20,7 +20,7 @@
 | Dimension | Local Demo Mode (`DEMO_MODE=true`) | Production Cloud Environment |
 | :--- | :--- | :--- |
 | **Database Engine** | Embedded SQLite (`real_estate.db`) | Managed PostgreSQL (e.g. Render / AWS RDS) with SSL |
-| **Authentication** | Built-in demo credentials (`admin@geosmart.ai`) | Hardened JWT with rotation, bcrypt salt rounds |
+| **Authentication** | Built-in demo credentials (`admin@cloudrealestate.ai`) | Hardened JWT with rotation, bcrypt salt rounds |
 | **Model Pipeline** | Real XGBoost, ResNet-18, TF-IDF, TreeSHAP | Exact same verified 544-D model artifacts |
 | **External APIs** | Graceful fallback & truthful UI limitations | Live Geoapify, Twilio Voice, Google Gemini, Razorpay |
 | **Payment Gateway** | Truthful unconfigured state notice | Live Razorpay merchant checkout with webhook validation |
@@ -32,7 +32,7 @@
 
 ```
 +-------------------------------------------------------------------------------------------------+
-|                                GEOSMART PRICE AI SYSTEM TOPOLOGY                                |
+|                        CLOUD-BASED REAL ESTATE ANALYSIS SYSTEM TOPOLOGY                         |
 +-------------------------------------------------------------------------------------------------+
                                                  |
                    +-----------------------------+-----------------------------+
@@ -143,7 +143,7 @@ API_V1_STR="/api/v1"
 DATABASE_URL="sqlite:///./real_estate.db"
 
 # Security (Safe default secret for local demonstration)
-JWT_SECRET="local-demo-jwt-secret-key-geosmart-2026"
+JWT_SECRET="local-demo-jwt-secret-key-cloud-real-estate-2026"
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
 # External APIs (Optional: Platform falls back gracefully when empty)
@@ -158,8 +158,8 @@ RAZORPAY_KEY_SECRET=""
 RAZORPAY_WEBHOOK_SECRET=""
 
 # Admin Credentials for Demo Portal
-PRIVATE_ADMIN_EMAIL="admin@geosmart.ai"
-PRIVATE_ADMIN_PASSWORD="GeoSmartAdmin@2026"
+PRIVATE_ADMIN_EMAIL="admin@cloudrealestate.ai"
+PRIVATE_ADMIN_PASSWORD="Admin@2026"
 PRIVATE_ADMIN_PHONE="+91 99880 12345"
 ```
 
@@ -185,7 +185,7 @@ python backend/init_demo_db.py
 
 ### What this accomplishes:
 1. Creates all database tables via SQLAlchemy ORM metadata (`users`, `properties`, `bank_loan_products`, `ai_leads`, `site_visits`, etc.).
-2. Creates the default administrator account (`admin@geosmart.ai` / `GeoSmartAdmin@2026`).
+2. Creates the default administrator account (`admin@cloudrealestate.ai` / `Admin@2026`).
 3. Seeds the 4 verified golden test properties (IDs: `16795`, `16799`, `101`, `16797`).
 4. Seeds 12 verified Indian bank home loan products (SBI, HDFC, ICICI, etc.).
 
@@ -301,4 +301,4 @@ When enabling live cloud services, populate the respective fields in `.env`:
 4. **Role-Based Access Control**: Sensitive admin and CRM endpoints (`/api/v1/admin/*`) enforce strict role validation via JWT claims.
 
 ---
-*GeoSmart Price AI — Built for transparent, multimodal, and reproducible real estate intelligence.*
+*Cloud-Based Real Estate Analysis — Built for transparent, multimodal, and reproducible real estate intelligence.*

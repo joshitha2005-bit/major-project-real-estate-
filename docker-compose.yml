@@ -5,11 +5,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: geosmart_backend
+    container_name: real_estate_backend
     restart: always
     environment:
       DATABASE_URL: sqlite:///./real_estate.db
-      JWT_SECRET: ${JWT_SECRET:-super-secret-key-geosmart-ai-2026}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-key-cloud-real-estate-ai-2026}
       GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY:-}
     ports:
       - "8000:8000"
@@ -26,7 +26,7 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_API_URL: /api/v1
-    container_name: geosmart_frontend
+    container_name: real_estate_frontend
     restart: always
     ports:
       - "80:80"

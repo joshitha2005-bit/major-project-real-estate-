@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================================
-REM GEOSMART PRICE AI -- 1-CLICK CLEAN MACHINE REPRODUCIBLE DEMO LAUNCHER
+REM CLOUD-BASED REAL ESTATE ANALYSIS -- 1-CLICK CLEAN MACHINE DEMO LAUNCHER
 REM ============================================================================
 REM This script automates reproducible setup on a clean Windows machine:
 REM   1. Checks Python and Node.js prerequisites
@@ -11,9 +11,9 @@ REM   5. Initializes local demo SQLite database and seeds golden records
 REM   6. Concurrently starts Backend (port 8000) and Frontend (port 5173)
 REM ============================================================================
 
-title GeoSmart Price AI - Demo Launcher
+title Cloud-Based Real Estate Analysis - Demo Launcher
 echo ============================================================================
-echo   GEOSMART PRICE AI: MULTIMODAL REAL ESTATE VALUATION PLATFORM
+echo   CLOUD-BASED REAL ESTATE ANALYSIS: MULTIMODAL VALUATION PLATFORM
 echo ============================================================================
 echo.
 
@@ -82,11 +82,11 @@ if %errorlevel% neq 0 (
 REM 7. Launch Backend API Server
 echo.
 echo [INFO] Launching FastAPI Backend Server on http://localhost:8000 ...
-start "GeoSmart AI - Backend API" cmd /k "cd backend && uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+start "Real Estate Analysis - Backend API" cmd /k "cd backend && uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 REM 8. Launch Frontend Vite Dev Server
 echo [INFO] Launching Frontend UI on http://localhost:5173 ...
-start "GeoSmart AI - Frontend UI" cmd /k "cd frontend && npm run dev"
+start "Real Estate Analysis - Frontend UI" cmd /k "cd frontend && npm run dev"
 
 REM 9. Wait briefly and open browser
 echo.

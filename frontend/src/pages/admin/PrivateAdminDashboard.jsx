@@ -338,7 +338,7 @@ export const PrivateAdminDashboard = () => {
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-white font-outfit flex items-center gap-2">
-              <span>🔐 GeoSmart Private Property & Lead Dashboard</span>
+              <span>🔐 Cloud-Based Real Estate Analysis — Private Admin Dashboard</span>
             </h1>
             <div className="flex items-center gap-2 text-[11px] text-slate-400">
               <span className="flex items-center gap-1 text-emerald-400">
@@ -346,7 +346,7 @@ export const PrivateAdminDashboard = () => {
                 Authenticated Private Portal
               </span>
               <span>•</span>
-              <span className="font-mono text-slate-500">{currentAdmin?.email || 'admin@geosmart.ai'}</span>
+              <span className="font-mono text-slate-500">{currentAdmin?.email || 'admin@cloudrealestate.ai'}</span>
             </div>
           </div>
         </div>

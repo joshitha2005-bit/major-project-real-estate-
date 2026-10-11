@@ -12,7 +12,7 @@ export const Footer = () => {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-accent-500 flex items-center justify-center">
                 <Building2 className="w-4 h-4 text-white" />
               </div>
-              <span className="text-lg font-bold text-white font-outfit">Real Estate AI</span>
+              <span className="text-lg font-bold text-white font-outfit">Cloud-Based Real Estate Analysis</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
               Production-ready real estate price intelligence and spatial GIS analytics for Bangalore and top Indian metro localities.
@@ -64,7 +64,7 @@ export const Footer = () => {
         </div>
 
         <div className="pt-8 border-t border-slate-800/60 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-          <p>© 2026 Real Estate AI Inc. All rights reserved.</p>
+          <p>© 2026 Cloud-Based Real Estate Analysis. All rights reserved.</p>
           <p className="flex items-center gap-1">
             Engineered with <Heart className="w-3.5 h-3.5 text-red-500 fill-current" /> for Bangalore GIS Intelligence
           </p>

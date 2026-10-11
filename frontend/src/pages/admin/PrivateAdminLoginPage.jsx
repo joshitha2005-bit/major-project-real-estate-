@@ -42,7 +42,7 @@ export const PrivateAdminLoginPage = () => {
         </div>
 
         <h2 className="text-center text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-outfit">
-          🔐 GeoSmart Private Admin
+          🔐 Cloud-Based Real Estate Analysis Admin
         </h2>
         <p className="mt-2 text-center text-xs sm:text-sm text-slate-400">
           Authorized personnel only. Access to private property & lead records.
@@ -70,7 +70,7 @@ export const PrivateAdminLoginPage = () => {
                 <input
                   type="text"
                   required
-                  placeholder="admin@geosmart.ai"
+                  placeholder="admin@cloudrealestate.ai"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 font-mono transition-colors"

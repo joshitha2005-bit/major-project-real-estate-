@@ -47,7 +47,7 @@ export const RegisterPage = () => {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-2xl font-bold font-outfit text-white">Create Platform Account</h2>
-            <p className="text-xs text-slate-400">Join Real Estate AI for full Bangalore spatial analytics</p>
+            <p className="text-xs text-slate-400">Join Cloud-Based Real Estate Analysis for full Bangalore spatial analytics</p>
           </div>
 
           {errorMessage && (

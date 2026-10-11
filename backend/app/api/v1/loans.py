@@ -1,5 +1,5 @@
 """
-GeoSmart Price AI - Smart Home Loan & Bank Comparison Endpoints
+Cloud-Based Real Estate Analysis - Smart Home Loan & Bank Comparison Endpoints
 Provides bank listings, EMI calculation, indicative eligibility, multi-bank comparisons,
 and PDF report streaming.
 """
@@ -257,7 +257,7 @@ def generate_loan_report_pdf(
     # Generate PDF bytes
     pdf_bytes = LoanPdfService.generate_loan_report_pdf(comparison_data)
 
-    filename = f"GeoSmart_Home_Loan_Report_Prop_{req.property_id or 'General'}.pdf"
+    filename = f"Cloud_Based_Real_Estate_Analysis_Loan_Report_Prop_{req.property_id or 'General'}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",

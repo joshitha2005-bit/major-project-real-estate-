@@ -44,7 +44,7 @@ export const LoginPage = () => {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-2xl font-bold font-outfit text-white">Welcome Back</h2>
-            <p className="text-xs text-slate-400">Sign in to Real Estate AI for saved locations & search history</p>
+            <p className="text-xs text-slate-400">Sign in to Cloud-Based Real Estate Analysis for saved locations & search history</p>
           </div>
 
           {errorMessage && (

@@ -1,8 +1,8 @@
-# GeoSmart Price AI: Comprehensive Technical Explanation Guide
+# Cloud-Based Real Estate Analysis: Comprehensive Technical Explanation Guide
 
 ## 1. Overview of the Multimodal System Architecture
 
-GeoSmart Price AI is a cloud-deployed multimodal AI framework designed to predict real estate property prices in Bengaluru with precision and transparency. Unlike conventional real estate platforms that evaluate properties using only basic tabular figures (such as square footage and bedroom count), GeoSmart Price AI unifies four distinct information modalities into a single, cohesive **544-dimensional feature vector**:
+Cloud-Based Real Estate Analysis is a cloud-deployed multimodal AI framework designed to predict real estate property prices in Bengaluru with precision and transparency. Unlike conventional real estate platforms that evaluate properties using only basic tabular figures (such as square footage and bedroom count), Cloud-Based Real Estate Analysis unifies four distinct information modalities into a single, cohesive **544-dimensional feature vector**:
 
 ```
 +---------------------------------------------------------------------------------------------------+

@@ -12,7 +12,7 @@ except ImportError:
     pass
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Real Estate Price Prediction & GIS Platform"
+    PROJECT_NAME: str = "Cloud-Based Real Estate Analysis"
     API_V1_STR: str = "/api/v1"
     
     # Security
@@ -62,9 +62,9 @@ class Settings(BaseSettings):
         )
 
     # Private Admin Configuration (Environment-driven, never hardcoded in client)
-    PRIVATE_ADMIN_EMAIL: str = os.getenv("PRIVATE_ADMIN_EMAIL", "admin@geosmart.ai")
+    PRIVATE_ADMIN_EMAIL: str = os.getenv("PRIVATE_ADMIN_EMAIL", "admin@cloudrealestate.ai")
     PRIVATE_ADMIN_PHONE: str = os.getenv("PRIVATE_ADMIN_PHONE", "+91 99880 12345")
-    PRIVATE_ADMIN_PASSWORD: str = os.getenv("PRIVATE_ADMIN_PASSWORD", "GeoSmartAdmin@2026")
+    PRIVATE_ADMIN_PASSWORD: str = os.getenv("PRIVATE_ADMIN_PASSWORD", "Admin@2026")
     AUTO_SEND_HIGH_CONFIDENCE_LEADS: bool = os.getenv("AUTO_SEND_HIGH_CONFIDENCE_LEADS", "false").lower() in ("true", "1")
     OWNER_NOTIFICATION_PROVIDER: str = os.getenv("OWNER_NOTIFICATION_PROVIDER", "")  # e.g. "", "EMAIL", "SMS", "WHATSAPP"
 

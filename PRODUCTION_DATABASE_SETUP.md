@@ -1,6 +1,6 @@
 # Production Database Setup Guide — Render PostgreSQL
 
-This guide documents the production database configuration, schema migrations, and environment variable requirements for deploying the **GeoSmart Price AI / PropPulse** FastAPI backend to Render.
+This guide documents the production database configuration, schema migrations, and environment variable requirements for deploying the **Cloud-Based Real Estate Analysis** FastAPI backend to Render.
 
 ---
 
@@ -9,7 +9,7 @@ This guide documents the production database configuration, schema migrations, a
 1. Log into your [Render Dashboard](https://dashboard.render.com/).
 2. Click the **"New +"** button in the top navigation bar and select **"PostgreSQL"**.
 3. Fill in the database details:
-   - **Name**: `geosmart-proppulse-db`
+   - **Name**: `cloud-real-estate-db`
    - **Database**: `real_estate_db` (or accept default)
    - **User**: (auto-generated or custom)
    - **Region**: Select the same region as your backend Web Service (e.g., *Oregon (US West)* or *Frankfurt (EU)*) to minimize latency.

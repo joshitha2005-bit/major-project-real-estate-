@@ -84,7 +84,7 @@ export const SubscriptionPage = () => {
         key: order.razorpay_key_id,
         amount: order.amount,
         currency: order.currency,
-        name: "GeoSmart Price AI",
+        name: "Cloud-Based Real Estate Analysis",
         description: "PropPulse Pro Monthly Subscription",
         order_id: order.razorpay_order_id,
         prefill: {

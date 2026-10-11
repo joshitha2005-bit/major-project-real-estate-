@@ -309,7 +309,7 @@ class LeadManagementService:
         # 1. Header Banner
         header_table = Table([
             [
-                Paragraph("<b>GeoSmart Price AI</b><br/><font size=7 color='#64748b'>PRIVATE PROPERTY & LEAD MANAGEMENT SYSTEM</font>", title_style),
+                Paragraph("<b>Cloud-Based Real Estate Analysis</b><br/><font size=7 color='#64748b'>PRIVATE PROPERTY & LEAD MANAGEMENT SYSTEM</font>", title_style),
                 Paragraph(f"<b>CONFIDENTIAL REPORT</b><br/><font size=7 color='#64748b'>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}</font>", subtitle_style)
             ]
         ], colWidths=[340, 200])
