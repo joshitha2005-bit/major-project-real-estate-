@@ -231,6 +231,29 @@ def run_migrations(target_path: str = None):
         conn.commit()
         print("Migration: 'voice_callback_requests' and 'property_inquiries' tables checked/created.")
 
+        # 7. Ensure private administrator account exists and matches configured admin credentials
+        cursor.execute("SELECT id FROM users WHERE email = ? AND role = 'ADMIN'", (settings.PRIVATE_ADMIN_EMAIL,))
+        admin_row = cursor.fetchone()
+        from app.core.security import get_password_hash
+        hashed_pwd = get_password_hash(settings.PRIVATE_ADMIN_PASSWORD)
+        if admin_row:
+            cursor.execute("UPDATE users SET hashed_password = ?, is_active = 1 WHERE id = ?", (hashed_pwd, admin_row[0]))
+        else:
+            cursor.execute("SELECT id FROM users WHERE email = 'admin@geosmart.ai' AND role = 'ADMIN'")
+            old_admin = cursor.fetchone()
+            if old_admin:
+                cursor.execute(
+                    "UPDATE users SET email = ?, hashed_password = ?, is_active = 1 WHERE id = ?",
+                    (settings.PRIVATE_ADMIN_EMAIL, hashed_pwd, old_admin[0])
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO users (email, full_name, hashed_password, role, is_active) VALUES (?, 'System Administrator', ?, 'ADMIN', 1)",
+                    (settings.PRIVATE_ADMIN_EMAIL, hashed_pwd)
+                )
+        conn.commit()
+        print(f"Migration: Administrator account verified for {settings.PRIVATE_ADMIN_EMAIL}.")
+
     except Exception as e:
         conn.rollback()
         print(f"Migration ERROR: {e}")

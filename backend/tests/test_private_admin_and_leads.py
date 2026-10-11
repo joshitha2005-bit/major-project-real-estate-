@@ -78,6 +78,28 @@ def normal_user_token():
 # ==============================================================
 def test_admin_login_success(client: TestClient):
     """Test admin authentication with valid environment credentials."""
+    session = SessionLocal()
+    try:
+        admin = session.query(User).filter(User.email == settings.PRIVATE_ADMIN_EMAIL).first()
+        if not admin:
+            admin = session.query(User).filter(User.role == "ADMIN").first()
+        if not admin:
+            admin = User(
+                email=settings.PRIVATE_ADMIN_EMAIL,
+                full_name="Administrator",
+                hashed_password=get_password_hash(settings.PRIVATE_ADMIN_PASSWORD),
+                role="ADMIN",
+                is_active=True
+            )
+            session.add(admin)
+            session.commit()
+        else:
+            admin.email = settings.PRIVATE_ADMIN_EMAIL
+            admin.hashed_password = get_password_hash(settings.PRIVATE_ADMIN_PASSWORD)
+            session.commit()
+    finally:
+        session.close()
+
     resp = client.post(
         f"{settings.API_V1_STR}/admin/login",
         json={"identifier": settings.PRIVATE_ADMIN_EMAIL, "password": settings.PRIVATE_ADMIN_PASSWORD}
