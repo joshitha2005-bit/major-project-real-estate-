@@ -31,6 +31,10 @@ jobs:
           pip install -r backend/requirements.txt
           pip install pytest httpx
 
+      - name: Prepare SQLite Database for CI Tests
+        run: |
+          cp backend/real_estate.db ./real_estate.db
+
       - name: Run Backend Pytest Suite
         run: |
           pytest backend/tests/ -v

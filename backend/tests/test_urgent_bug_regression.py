@@ -31,7 +31,8 @@ class TestUrgentBugRegression(unittest.TestCase):
         
         self.assertGreaterEqual(source_portal_cnt, 863)
         owner_cnt = self.db.query(Property).filter(Property.source_type.in_(["owner_listing", "PROPPULSE_DIRECT"])).count()
-        self.assertEqual(source_portal_cnt + demo_cnt + owner_cnt, total_cnt)
+        historical_cnt = self.db.query(Property).filter(Property.source_type == "historical_dataset").count()
+        self.assertEqual(source_portal_cnt + demo_cnt + owner_cnt + historical_cnt, total_cnt)
 
     def test_03_historical_contact_owner_restriction(self):
         """Verify dataset records hide contact phone and do not represent as live owner listings."""
