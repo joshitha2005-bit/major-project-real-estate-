@@ -28,31 +28,39 @@ def get_model_evaluation_metrics():
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
         return {
-            "model_version": meta.get("model_version", "2.0.0-multimodal-resnet18-xgboost"),
+            "model_version": meta.get("model_version", "2.1.0-leakage-free-multimodal-resnet18-xgboost"),
             "evaluation_dataset_size": meta.get("total_properties_trained", 600),
             "test_split_ratio": 0.20,
-            "validation_methodology": "80/20 Train-Test Split with 5-Fold Cross Validation",
+            "train_samples": meta.get("train_samples", 480),
+            "test_samples": meta.get("test_samples", 120),
+            "validation_methodology": "80/20 Train-Test Split (480 train, 120 test); leakage-free held-out test evaluation; 5-fold cross-validation not implemented",
             "fused_dimensions": meta.get("fused_feature_dimension", 544),
             "feature_breakdown": meta.get("feature_breakdown", {}),
             "metrics": meta.get("final_metrics", {
-                "r2_score": 0.6649,
-                "rmse_lakhs": 78.80,
-                "mae_lakhs": 49.26,
-                "mape_percent": 33.72
+                "r2_score": 0.6305,
+                "rmse_lakhs": 82.75,
+                "mae_lakhs": 52.30,
+                "mape_percent": 35.42,
+                "rmse_inr": 8274591.91,
+                "mae_inr": 5229828.50
             }),
             "ablation_results": meta.get("ablation_results", {})
         }
     return {
-        "model_version": "2.0.0-multimodal-resnet18-xgboost",
+        "model_version": "2.1.0-leakage-free-multimodal-resnet18-xgboost",
         "evaluation_dataset_size": 600,
         "test_split_ratio": 0.20,
-        "validation_methodology": "80/20 Train-Test Split with 5-Fold Cross Validation",
+        "train_samples": 480,
+        "test_samples": 120,
+        "validation_methodology": "80/20 Train-Test Split (480 train, 120 test); leakage-free held-out test evaluation; 5-fold cross-validation not implemented",
         "fused_dimensions": 544,
         "metrics": {
-            "r2_score": 0.6649,
-            "rmse_lakhs": 78.80,
-            "mae_lakhs": 49.26,
-            "mape_percent": 33.72
+            "r2_score": 0.6305,
+            "rmse_lakhs": 82.75,
+            "mae_lakhs": 52.30,
+            "mape_percent": 35.42,
+            "rmse_inr": 8274591.91,
+            "mae_inr": 5229828.50
         }
     }
 

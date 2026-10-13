@@ -7,6 +7,17 @@ export const propertyService = {
     return response.data;
   },
 
+  getDistricts: async () => {
+    const response = await api.get('/properties/districts');
+    return response.data;
+  },
+
+  getReraProjects: async (district) => {
+    const params = district && district !== 'All' ? { district } : {};
+    const response = await api.get('/properties/rera-projects', { params });
+    return response.data;
+  },
+
   getPropertyById: async (id) => {
     const response = await api.get(`/properties/${id}`);
     return response.data;

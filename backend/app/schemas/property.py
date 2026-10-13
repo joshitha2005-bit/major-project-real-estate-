@@ -21,6 +21,7 @@ class PropertyBase(BaseModel):
     description: Optional[str] = None
     address: str
     locality: str = ""
+    district: Optional[str] = "Bengaluru Urban"
     latitude: float
     longitude: float
     owner_name: Optional[str] = "PropPulse Verified Owner"
@@ -59,6 +60,7 @@ class PropertyCreate(BaseModel):
     address: str
     locality: str
     sub_locality: Optional[str] = None
+    district: Optional[str] = "Bengaluru Urban"
     latitude: Optional[float] = 12.9716
     longitude: Optional[float] = 77.5946
     images: List[str] = []
@@ -97,6 +99,7 @@ class CanonicalLocation(BaseModel):
     road: Optional[str] = None
     sub_locality: Optional[str] = None
     locality: str
+    district: Optional[str] = "Bengaluru Urban"
     city: str = "Bengaluru"
     state: str = "Karnataka"
     pincode: Optional[str] = None
@@ -114,6 +117,7 @@ class PropertyOut(PropertyBase):
     user_id: int
     source_listing_id: Optional[str] = None
     city: Optional[str] = "Bengaluru"
+    district: Optional[str] = "Bengaluru Urban"
     sub_locality: Optional[str] = None
     zone: Optional[str] = None
     society: Optional[str] = None

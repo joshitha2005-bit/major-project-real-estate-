@@ -98,17 +98,18 @@ export const resolvePropertyDisplay = (property) => {
   const primaryTitle = buildingName;
   const identitySubtitle = isUnresolved ? "Building name unavailable in source" : null;
 
-  // 2. Sub-Locality / Locality Line
-  const loc = (property.locality || 'Bengaluru').trim();
+  // 2. Sub-Locality / Locality / District Line
+  const dist = (property.district || 'Bengaluru Urban').trim();
+  const loc = (property.locality || dist).trim();
   const subLoc = (property.sub_locality || '').trim();
   
   let locationLine = '';
   if (subLoc && !loc.toLowerCase().includes(subLoc.toLowerCase())) {
-    locationLine = `${subLoc}, ${loc}, Bengaluru`;
-  } else if (loc.toLowerCase().includes('bengaluru') || loc.toLowerCase().includes('bangalore')) {
-    locationLine = loc;
+    locationLine = `${subLoc}, ${loc}, ${dist}`;
+  } else if (loc.toLowerCase().includes(dist.toLowerCase())) {
+    locationLine = `${loc}, Karnataka`;
   } else {
-    locationLine = `${loc}, Bengaluru`;
+    locationLine = `${loc}, ${dist}`;
   }
 
   // 3. Street / Road / Address Line

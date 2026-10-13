@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from datetime import datetime, timezone, timedelta
 from app.core.config import settings
 
 def run_migrations(target_path: str = None):
@@ -253,6 +254,51 @@ def run_migrations(target_path: str = None):
                 )
         conn.commit()
         print(f"Migration: Administrator account verified for {settings.PRIVATE_ADMIN_EMAIL}.")
+
+        # 8. Ensure standard demo user account exists and matches demo credentials
+        demo_email = "demo@cloudrealestate.ai"
+        cursor.execute("SELECT id FROM users WHERE email = ?", (demo_email,))
+        demo_row = cursor.fetchone()
+        hashed_demo_pwd = get_password_hash("DemoUser@2026")
+        if demo_row:
+            cursor.execute("UPDATE users SET hashed_password = ?, is_active = 1, role = 'USER' WHERE id = ?", (hashed_demo_pwd, demo_row[0]))
+        else:
+            cursor.execute("SELECT id FROM users WHERE email = 'demo@geosmart.ai'")
+            old_demo = cursor.fetchone()
+            if old_demo:
+                cursor.execute(
+                    "UPDATE users SET email = ?, hashed_password = ?, is_active = 1, role = 'USER' WHERE id = ?",
+                    (demo_email, hashed_demo_pwd, old_demo[0])
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO users (email, full_name, hashed_password, role, is_active) VALUES (?, 'Demo User', ?, 'USER', 1)",
+                    (demo_email, hashed_demo_pwd)
+                )
+        conn.commit()
+        print(f"Migration: Demo user account verified for {demo_email}.")
+
+        # 9. Ensure demo user has active PRO subscription
+        cursor.execute("SELECT id FROM users WHERE email = ?", (demo_email,))
+        demo_user_row = cursor.fetchone()
+        if demo_user_row:
+            demo_uid = demo_user_row[0]
+            cursor.execute("SELECT id FROM subscriptions WHERE user_id = ?", (demo_uid,))
+            sub_row = cursor.fetchone()
+            now_iso = datetime.now(timezone.utc).isoformat()
+            end_iso = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+            if not sub_row:
+                cursor.execute(
+                    "INSERT INTO subscriptions (user_id, plan, plan_name, subscription_status, status, plan_amount, currency, start_date, end_date, payment_reference, created_at, updated_at) VALUES (?, 'PRO', 'PROPULSE_PRO_299', 'ACTIVE', 'ACTIVE', 299.0, 'INR', ?, ?, 'DEMO_SEED_PRO', ?, ?)",
+                    (demo_uid, now_iso, end_iso, now_iso, now_iso)
+                )
+            else:
+                cursor.execute(
+                    "UPDATE subscriptions SET plan = 'PRO', plan_name = 'PROPULSE_PRO_299', subscription_status = 'ACTIVE', status = 'ACTIVE', end_date = ? WHERE id = ?",
+                    (end_iso, sub_row[0])
+                )
+            conn.commit()
+            print(f"Migration: Demo user PRO subscription verified for {demo_email}.")
 
     except Exception as e:
         conn.rollback()

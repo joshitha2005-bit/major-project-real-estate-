@@ -25,9 +25,11 @@ from app.core.database import Base, engine, SessionLocal
 from app.core.security import get_password_hash
 from app.core.config import settings
 from app.models.user import User
+from app.models.subscription import Subscription
 from app.models.property import Property
 from app.models.loan import BankLoanProduct
 from app.services.loan_seed_data import VERIFIED_BANK_PRODUCTS
+from datetime import datetime, timezone, timedelta
 
 
 def init_database():
@@ -50,6 +52,8 @@ def init_database():
         admin_email = settings.PRIVATE_ADMIN_EMAIL
         admin_user = db.query(User).filter(User.email == admin_email).first()
         if not admin_user:
+            admin_user = db.query(User).filter(User.role == "ADMIN").first()
+        if not admin_user:
             admin_user = User(
                 email=admin_email,
                 hashed_password=get_password_hash(settings.PRIVATE_ADMIN_PASSWORD),
@@ -62,10 +66,17 @@ def init_database():
             db.refresh(admin_user)
             print(f"  [OK] Created demo admin account: {admin_email}")
         else:
-            print(f"  [OK] Admin account already present: {admin_email}")
+            admin_user.email = admin_email
+            admin_user.hashed_password = get_password_hash(settings.PRIVATE_ADMIN_PASSWORD)
+            admin_user.role = "ADMIN"
+            admin_user.is_active = True
+            db.commit()
+            print(f"  [OK] Admin account verified & synchronized: {admin_email}")
 
         demo_email = "demo@cloudrealestate.ai"
         demo_user = db.query(User).filter(User.email == demo_email).first()
+        if not demo_user:
+            demo_user = db.query(User).filter(User.email == "demo@geosmart.ai").first()
         if not demo_user:
             demo_user = User(
                 email=demo_email,
@@ -79,7 +90,39 @@ def init_database():
             db.refresh(demo_user)
             print(f"  [OK] Created demo standard user account: {demo_email}")
         else:
-            print(f"  [OK] Demo user account already present: {demo_email}")
+            demo_user.email = demo_email
+            demo_user.hashed_password = get_password_hash("DemoUser@2026")
+            demo_user.role = "USER"
+            demo_user.is_active = True
+            db.commit()
+            print(f"  [OK] Demo user account verified & synchronized: {demo_email}")
+
+        # Ensure active PRO subscription for demo user
+        sub = db.query(Subscription).filter(Subscription.user_id == demo_user.id).first()
+        if not sub:
+            sub = Subscription(
+                user_id=demo_user.id,
+                plan="PRO",
+                plan_name="PROPULSE_PRO_299",
+                subscription_status="ACTIVE",
+                status="ACTIVE",
+                plan_amount=299.0,
+                currency="INR",
+                start_date=datetime.now(timezone.utc),
+                end_date=datetime.now(timezone.utc) + timedelta(days=365),
+                payment_reference="DEMO_SEED_PRO"
+            )
+            db.add(sub)
+            db.commit()
+            print(f"  [OK] Created active PRO subscription for demo user: {demo_email}")
+        else:
+            sub.plan = "PRO"
+            sub.plan_name = "PROPULSE_PRO_299"
+            sub.subscription_status = "ACTIVE"
+            sub.status = "ACTIVE"
+            sub.end_date = datetime.now(timezone.utc) + timedelta(days=365)
+            db.commit()
+            print(f"  [OK] Verified active PRO subscription for demo user: {demo_email}")
 
         # 3. Seed Golden Properties
         print("\n[Step 3/4] Verifying golden demo properties...")

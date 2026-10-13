@@ -53,6 +53,7 @@ class Property(Base):
 
     source_listing_id = Column(String(100), nullable=True)
     city = Column(String(100), default="Bengaluru")
+    district = Column(String(100), default="Bengaluru Urban", index=True, nullable=True)
     sub_locality = Column(String(255), nullable=True)
     zone = Column(String(100), nullable=True)
     society = Column(String(255), nullable=True)

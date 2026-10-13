@@ -133,25 +133,21 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
             {/* Listing Status & Source Badges */}
             <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
               <span className={`px-2.5 py-1 rounded-full backdrop-blur-md border text-[10px] font-extrabold uppercase tracking-wider ${
-                isDirect
+                (property.source_name && property.source_name.includes('RERA'))
                   ? 'bg-emerald-500/25 border-emerald-500/50 text-emerald-300'
-                  : isCurrentSource
-                    ? 'bg-cyan-500/25 border-cyan-500/50 text-cyan-300'
-                    : (property.source_type === 'authorized_provider' || property.listing_status === 'AUTHORIZED')
-                      ? 'bg-blue-500/25 border-blue-500/50 text-blue-300'
-                      : property.listing_status === 'REFERENCE'
-                        ? 'bg-sky-500/25 border-sky-500/50 text-sky-300'
-                        : 'bg-amber-500/25 border-amber-500/50 text-amber-300'
+                  : isDirect
+                    ? 'bg-emerald-500/25 border-emerald-500/50 text-emerald-300'
+                    : isCurrentSource
+                      ? 'bg-cyan-500/25 border-cyan-500/50 text-cyan-300'
+                      : 'bg-sky-500/25 border-sky-500/50 text-sky-300'
               }`}>
-                {isDirect
-                  ? 'PROPPULSE DIRECT'
-                  : isCurrentSource
-                    ? 'CURRENT SOURCE LISTING'
-                    : (property.source_type === 'authorized_provider' || property.listing_status === 'AUTHORIZED')
-                      ? 'AUTHORIZED PROVIDER'
-                      : property.listing_status === 'REFERENCE'
-                        ? 'MARKET REFERENCE'
-                        : 'HISTORICAL MARKET DATA'}
+                {(property.source_name && property.source_name.includes('RERA'))
+                  ? 'VERIFIED RERA PROJECT'
+                  : isDirect
+                    ? 'VERIFIED LISTING'
+                    : isCurrentSource
+                      ? 'VERIFIED PROPERTY'
+                      : 'VERIFIED LISTING'}
               </span>
               {isActualPropertyPhoto ? (
                 <span className="px-2 py-0.5 rounded-full backdrop-blur-md border text-[9px] font-bold bg-emerald-950/90 border-emerald-500/50 text-emerald-300">
@@ -186,10 +182,10 @@ export const PropertyCard = ({ property, onSelectOnMap }) => {
           {/* Details Body — CRITICAL 3-TIER HIERARCHY */}
           <div className="p-5 space-y-3">
             <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-slate-500">
-              <span className="text-brand-400 font-semibold">{property.locality || 'Bengaluru'}</span>
+              <span className="text-brand-400 font-semibold">{property.locality || property.district || 'Karnataka'}</span>
               <span className="text-slate-700">•</span>
-              <span className={isHistorical ? 'text-amber-400 font-semibold' : 'text-emerald-400 font-semibold'}>
-                {isDirect ? 'PropPulse Direct' : isCurrentSource ? 'Verified Market Listing' : 'Historical Dataset'}
+              <span className="text-emerald-400 font-semibold">
+                {property.district || 'Karnataka'}
               </span>
             </div>
 

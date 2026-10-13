@@ -1,8 +1,11 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from datetime import datetime, timezone, timedelta
 from app.models.user import User
+from app.models.subscription import Subscription
 from app.models.property import Property
 from app.core.security import get_password_hash
+from app.core.config import settings
 
 SEEDED_PROPERTIES = [
     {
@@ -2450,18 +2453,77 @@ class SeedService:
                 except Exception:
                     db.rollback()
 
-            # Check if default admin user exists
-            default_user = db.query(User).first()
-            if not default_user:
-                default_user = User(
-                    email="admin@realestateai.com",
-                    full_name="Real Estate AI Admin",
-                    hashed_password=get_password_hash("Admin123!"),
+            # Ensure standard administrator account exists and is synchronized
+            admin_user = db.query(User).filter(User.email == settings.PRIVATE_ADMIN_EMAIL).first()
+            if not admin_user:
+                admin_user = db.query(User).filter(User.role == "ADMIN").first()
+            if not admin_user:
+                admin_user = User(
+                    email=settings.PRIVATE_ADMIN_EMAIL,
+                    full_name="System Administrator",
+                    hashed_password=get_password_hash(settings.PRIVATE_ADMIN_PASSWORD),
+                    role="ADMIN",
                     is_active=True
                 )
-                db.add(default_user)
+                db.add(admin_user)
                 db.commit()
-                db.refresh(default_user)
+                db.refresh(admin_user)
+            else:
+                admin_user.email = settings.PRIVATE_ADMIN_EMAIL
+                admin_user.hashed_password = get_password_hash(settings.PRIVATE_ADMIN_PASSWORD)
+                admin_user.role = "ADMIN"
+                admin_user.is_active = True
+                db.commit()
+
+            # Ensure standard demo user account exists and is synchronized
+            demo_email = "demo@cloudrealestate.ai"
+            demo_user = db.query(User).filter(User.email == demo_email).first()
+            if not demo_user:
+                demo_user = db.query(User).filter(User.email == "demo@geosmart.ai").first()
+            if not demo_user:
+                demo_user = User(
+                    email=demo_email,
+                    full_name="Demo User",
+                    hashed_password=get_password_hash("DemoUser@2026"),
+                    role="USER",
+                    is_active=True
+                )
+                db.add(demo_user)
+                db.commit()
+                db.refresh(demo_user)
+            else:
+                demo_user.email = demo_email
+                demo_user.hashed_password = get_password_hash("DemoUser@2026")
+                demo_user.role = "USER"
+                demo_user.is_active = True
+                db.commit()
+
+            # Ensure active PRO subscription for demo user
+            sub = db.query(Subscription).filter(Subscription.user_id == demo_user.id).first()
+            if not sub:
+                sub = Subscription(
+                    user_id=demo_user.id,
+                    plan="PRO",
+                    plan_name="PROPULSE_PRO_299",
+                    subscription_status="ACTIVE",
+                    status="ACTIVE",
+                    plan_amount=299.0,
+                    currency="INR",
+                    start_date=datetime.now(timezone.utc),
+                    end_date=datetime.now(timezone.utc) + timedelta(days=365),
+                    payment_reference="DEMO_SEED_PRO"
+                )
+                db.add(sub)
+                db.commit()
+            else:
+                sub.plan = "PRO"
+                sub.plan_name = "PROPULSE_PRO_299"
+                sub.subscription_status = "ACTIVE"
+                sub.status = "ACTIVE"
+                sub.end_date = datetime.now(timezone.utc) + timedelta(days=365)
+                db.commit()
+
+            default_user = admin_user
 
             # Check existing properties count
             existing_count = db.query(Property).count()

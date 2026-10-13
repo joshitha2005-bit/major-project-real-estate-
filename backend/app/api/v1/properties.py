@@ -114,6 +114,94 @@ LOCALITY_COORDINATES = {
     "chikka tirupathi": (12.8980, 77.8650)
 }
 
+OFFICIAL_KARNATAKA_DISTRICTS = [
+    "Bagalkote", "Ballari", "Belagavi", "Bengaluru Rural", "Bengaluru Urban",
+    "Bidar", "Chamarajanagar", "Chikkaballapura", "Chikkamagaluru", "Chitradurga",
+    "Dakshina Kannada", "Davanagere", "Dharwad", "Gadag", "Hassan",
+    "Haveri", "Kalaburagi", "Kodagu", "Kolar", "Koppal",
+    "Mandya", "Mysuru", "Raichur", "Ramanagara", "Shivamogga",
+    "Tumakuru", "Udupi", "Uttara Kannada", "Vijayanagara", "Vijayapura", "Yadgir"
+]
+
+KARNATAKA_DISTRICT_SYNONYMS = {
+    "mysore": "Mysuru",
+    "mysuru": "Mysuru",
+    "bangalore": "Bengaluru Urban",
+    "bengaluru": "Bengaluru Urban",
+    "bengaluru urban": "Bengaluru Urban",
+    "bangalore urban": "Bengaluru Urban",
+    "bengaluru rural": "Bengaluru Rural",
+    "bangalore rural": "Bengaluru Rural",
+    "belgaum": "Belagavi",
+    "belagavi": "Belagavi",
+    "bellary": "Ballari",
+    "ballari": "Ballari",
+    "bijapur": "Vijayapura",
+    "vijayapura": "Vijayapura",
+    "gulbarga": "Kalaburagi",
+    "kalaburagi": "Kalaburagi",
+    "mangalore": "Dakshina Kannada",
+    "mangaluru": "Dakshina Kannada",
+    "dakshina kannada": "Dakshina Kannada",
+    "south canara": "Dakshina Kannada",
+    "shimoga": "Shivamogga",
+    "shivamogga": "Shivamogga",
+    "tumkur": "Tumakuru",
+    "tumakuru": "Tumakuru",
+    "chikmagalur": "Chikkamagaluru",
+    "chikkamagaluru": "Chikkamagaluru",
+    "chickmagalur": "Chikkamagaluru",
+    "chikkaballapur": "Chikkaballapura",
+    "chikkaballapura": "Chikkaballapura",
+    "chikballapur": "Chikkaballapura",
+    "davangere": "Davanagere",
+    "davanagere": "Davanagere",
+    "hubli": "Dharwad",
+    "hubballi": "Dharwad",
+    "dharwad": "Dharwad",
+    "north canara": "Uttara Kannada",
+    "uttara kannada": "Uttara Kannada",
+    "karwar": "Uttara Kannada",
+    "coorg": "Kodagu",
+    "kodagu": "Kodagu",
+    "madikeri": "Kodagu",
+    "bagalkot": "Bagalkote",
+    "bagalkote": "Bagalkote",
+    "vijayanagar": "Vijayanagara",
+    "vijayanagara": "Vijayanagara",
+    "hospet": "Vijayanagara",
+    "hosapete": "Vijayanagara",
+    "bidar": "Bidar",
+    "chamarajanagar": "Chamarajanagar",
+    "chamarajnagar": "Chamarajanagar",
+    "chitradurga": "Chitradurga",
+    "gadag": "Gadag",
+    "hassan": "Hassan",
+    "haveri": "Haveri",
+    "kolar": "Kolar",
+    "koppal": "Koppal",
+    "mandya": "Mandya",
+    "raichur": "Raichur",
+    "ramanagara": "Ramanagara",
+    "ramanagar": "Ramanagara",
+    "udupi": "Udupi",
+    "yadgir": "Yadgir"
+}
+
+def normalize_karnataka_district(name: Optional[str]) -> Optional[str]:
+    """Normalize user input or variant to official Karnataka district name."""
+    if not name or not isinstance(name, str):
+        return None
+    cleaned = name.strip().lower()
+    if cleaned in KARNATAKA_DISTRICT_SYNONYMS:
+        return KARNATAKA_DISTRICT_SYNONYMS[cleaned]
+    for d in OFFICIAL_KARNATAKA_DISTRICTS:
+        if d.lower() == cleaned:
+            return d
+    for d in OFFICIAL_KARNATAKA_DISTRICTS:
+        if d.lower() in cleaned or cleaned in d.lower():
+            return d
+    return name.strip().title()
 
 def format_indian_currency(amount: float) -> str:
     """Format number into Indian Rupee Lakhs / Crores string representation."""
@@ -281,6 +369,7 @@ def enrich_property_out(p: Property) -> PropertyOut:
     
     # Formatted address assembly
     formatted_address = getattr(p, "formatted_address", None)
+    dist_val = getattr(p, "district", "Bengaluru Urban") or "Bengaluru Urban"
     if not formatted_address:
         addr_segments = []
         if building_name:
@@ -290,7 +379,9 @@ def enrich_property_out(p: Property) -> PropertyOut:
         if sub_loc_val and sub_loc_val.lower() not in loc_val.lower():
             addr_segments.append(sub_loc_val)
         addr_segments.append(loc_val)
-        addr_segments.append("Bengaluru, Karnataka" + (f" - {pincode_val}" if pincode_val else ""))
+        if dist_val.lower() not in loc_val.lower():
+            addr_segments.append(dist_val)
+        addr_segments.append("Karnataka" + (f" - {pincode_val}" if pincode_val else ""))
         formatted_address = ", ".join(addr_segments)
     
     canonical_location = CanonicalLocation(
@@ -304,7 +395,8 @@ def enrich_property_out(p: Property) -> PropertyOut:
         road=road_val,
         sub_locality=sub_loc_val,
         locality=loc_val,
-        city="Bengaluru",
+        district=dist_val,
+        city=getattr(p, "city", dist_val) or dist_val,
         state="Karnataka",
         pincode=pincode_val,
         latitude=p.latitude,
@@ -363,7 +455,8 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "id": p.id,
         "user_id": p.user_id,
         "source_listing_id": contact_info["source_listing_id"],
-        "city": getattr(p, "city", "Bengaluru"),
+        "city": getattr(p, "city", dist_val) or dist_val,
+        "district": dist_val,
         "title": display_title,
         "display_title": display_title,
         "building_name": building_name,
@@ -393,8 +486,8 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "zone": getattr(p, "zone", None),
         "latitude": p.latitude,
         "longitude": p.longitude,
-        "owner_name": "Historical Dataset" if is_historical else (p.owner_name or "Property Owner" if is_direct else "Verified Contact"),
-        "seller_name": "Historical Dataset" if is_historical else (p.owner_name or "Property Owner" if is_direct else "Verified Contact"),
+        "owner_name": (p.owner_name or "Verified Real Estate Listing") if is_direct else "Verified Real Estate Listing",
+        "seller_name": (p.seller_name or p.owner_name or "Verified Real Estate Listing") if is_direct else "Verified Real Estate Listing",
         "owner_phone": contact_info["contact_number"] if contact_info["contact_display_permission"] else "Contact information unavailable",
         "phone": contact_info["contact_number"] if contact_info["contact_display_permission"] else "Contact information unavailable",
         "images": img_info["images"],
@@ -440,7 +533,7 @@ def enrich_property_out(p: Property) -> PropertyOut:
         "display_title": display_title,
         "canonical_location": canonical_location,
         "uploaded_images": p.property_images or [],
-        "created_at": p.created_at,
+        "created_at": p.created_at or datetime.now(timezone.utc),
         "last_verified_at": getattr(p, "last_verified_at", None),
         "dataset_category": getattr(p, "dataset_category", "REFERENCE_HISTORICAL"),
         "is_main_ai_ready": bool(getattr(p, "is_main_ai_ready", False)),
@@ -551,12 +644,21 @@ def parse_natural_query(query_str: str):
         if below_area:
             parsed["max_area"] = float(below_area.group(1))
 
-    # 6. Locality matching (Whitefield, Koramangala, etc.)
+    # 6. District matching
+    for syn, canonical_d in KARNATAKA_DISTRICT_SYNONYMS.items():
+        if re.search(r'\b' + re.escape(syn) + r'\b', query_str):
+            parsed["district"] = canonical_d
+            break
+
+    # 7. Locality matching (Whitefield, Koramangala, etc.)
     # Remove filters and helper keywords to extract locality candidate using word boundaries
     clean_words = query_str
+    if "district" in parsed:
+        for syn in KARNATAKA_DISTRICT_SYNONYMS.keys():
+            clean_words = re.sub(r'\b' + re.escape(syn) + r'\b', '', clean_words, flags=re.IGNORECASE)
     clean_words = re.sub(r"\b\d+\s*(?:bhk|bedroom|bed|room|rooms)\b", "", clean_words)
     clean_words = re.sub(r"\b(?:under|below|less than|above|more than|greater than|between|and|min|max|budget|<=|>=)\s*[\d\.]+\s*(?:crore|cr|lakh|lakhs|lacs|lk|lac|sqft|sq.ft|sq ft|sq. ft|sq)\b", "", clean_words)
-    clean_words = re.sub(r"\b(?:apartment|apartments|flat|flats|villa|villas|house|houses|plot|plots|land|lands|buy|rent|rental|sale|purchase|in|near|properties)\b", "", clean_words)
+    clean_words = re.sub(r"\b(?:apartment|apartments|flat|flats|villa|villas|house|houses|plot|plots|land|lands|buy|rent|rental|sale|purchase|in|near|properties|karnataka)\b", "", clean_words)
     
     locality_candidate = clean_words.strip()
     if locality_candidate:
@@ -601,9 +703,11 @@ def parse_natural_query(query_str: str):
             
     return parsed
 
+@router.get("", response_model=PropertyListOut)
 @router.get("/", response_model=PropertyListOut)
 def list_properties(
     query: Optional[str] = Query(None, description="Search term e.g. Koramangala, Whitefield"),
+    district: Optional[str] = Query(None, description="Filter by Karnataka district e.g. Mysuru, Belagavi, Bengaluru Urban"),
     property_type: Optional[str] = Query(None),
     listing_type: Optional[str] = Query(None),
     bhk: Optional[int] = Query(None),
@@ -642,6 +746,7 @@ def list_properties(
         return v
 
     query = resolve_val(query)
+    district = resolve_val(district)
     property_type = resolve_val(property_type)
     listing_type = resolve_val(listing_type)
     bhk = resolve_val(bhk)
@@ -671,15 +776,22 @@ def list_properties(
     if query and isinstance(query, str) and query.strip():
         parsed_filters = parse_natural_query(query)
 
+    # 0. Strict Karnataka District filter (prevents cross-district contamination)
+    final_district = district or parsed_filters.get("district")
+    if final_district and str(final_district).strip() and str(final_district).strip().lower() not in ["all", "karnataka"]:
+        norm_district = normalize_karnataka_district(str(final_district))
+        if norm_district:
+            q = q.filter(Property.district == norm_district)
+
     # 1. Locality strict filter (with flexible Road/Main Road suffix support)
     final_locality = parsed_filters.get("locality")
-    if final_locality:
+    if final_locality and (not final_district or final_locality.lower() != str(final_district).lower()):
         if final_locality.lower().endswith(" road"):
             base_loc = final_locality[:-5].strip()
             q = q.filter(or_(Property.locality.ilike(f"%{final_locality}%"), Property.locality.ilike(f"%{base_loc}%")))
         else:
             q = q.filter(Property.locality.ilike(f"%{final_locality}%"))
-    elif query and isinstance(query, str) and query.strip():
+    elif query and isinstance(query, str) and query.strip() and not final_district:
         # Fallback to splitting by comma for traditional locality searches
         clean_locality = query.strip().split(',')[0].strip()
         if clean_locality.lower().endswith(" road"):
@@ -903,6 +1015,81 @@ def get_dataset_stats(db: Session = Depends(get_db)):
         "missing_contact": missing_contact,
         "locality_distribution": locality_distribution,
         "source_distribution": source_distribution
+    }
+
+
+@router.get("/districts")
+def get_karnataka_districts(db: Session = Depends(get_db)):
+    """Return all 31 official Karnataka districts with verified property counts."""
+    from sqlalchemy import func
+
+    # Query district counts for MAIN_AI_READY properties
+    counts = dict(
+        db.query(Property.district, func.count(Property.id))
+        .filter(Property.district.isnot(None), Property.is_main_ai_ready == True)
+        .group_by(Property.district)
+        .all()
+    )
+
+    # Query total counts across all properties
+    all_counts = dict(
+        db.query(Property.district, func.count(Property.id))
+        .filter(Property.district.isnot(None))
+        .group_by(Property.district)
+        .all()
+    )
+
+    district_data = []
+    for dist in OFFICIAL_KARNATAKA_DISTRICTS:
+        verified_count = counts.get(dist, 0)
+        total_count = all_counts.get(dist, 0)
+        district_data.append({
+            "district": dist,
+            "state": "Karnataka",
+            "verified_properties": verified_count,
+            "total_properties": total_count,
+            "has_properties": verified_count > 0 or total_count > 0
+        })
+
+    return {
+        "state": "Karnataka",
+        "total_districts": len(OFFICIAL_KARNATAKA_DISTRICTS),
+        "districts_with_properties": sum(1 for d in district_data if d["has_properties"]),
+        "districts": district_data
+    }
+
+
+@router.get("/rera-projects")
+def get_karnataka_rera_projects(district: Optional[str] = Query(None)):
+    """Return authentic Karnataka RERA registered projects from KARNATAKA_RERA_PROJECTS.csv."""
+    import pandas as pd
+    import os
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "backend", "datasets", "KARNATAKA_RERA_PROJECTS.csv"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), "datasets", "KARNATAKA_RERA_PROJECTS.csv"),
+        os.path.join(os.getcwd(), "backend", "datasets", "KARNATAKA_RERA_PROJECTS.csv"),
+        os.path.join(os.getcwd(), "datasets", "KARNATAKA_RERA_PROJECTS.csv"),
+        "backend/datasets/KARNATAKA_RERA_PROJECTS.csv",
+        "KARNATAKA_RERA_PROJECTS.csv"
+    ]
+    csv_path = next((p for p in candidates if os.path.exists(p)), None)
+    if not csv_path:
+        return {"total": 0, "projects": []}
+    
+    df = pd.read_csv(csv_path)
+    if district and str(district).strip() and str(district).strip().lower() not in ["all", "karnataka"]:
+        norm_d = normalize_karnataka_district(district)
+        if norm_d:
+            df = df[df["district"].str.lower() == norm_d.lower()]
+    
+    records = df.to_dict(orient="records")
+    return {
+        "total": len(records),
+        "district": district,
+        "source": "Karnataka Real Estate Regulatory Authority (K-RERA)",
+        "source_url": "https://rera.karnataka.gov.in/viewAllProjects",
+        "record_type": "REGISTERED_REAL_ESTATE_PROJECT",
+        "projects": records
     }
 
 

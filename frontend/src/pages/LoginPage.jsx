@@ -7,7 +7,7 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 
 export const LoginPage = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,6 +16,12 @@ export const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const from = location.state?.from?.pathname || '/dashboard';
+
+  const handleFillDemo = () => {
+    setValue('email', 'demo@cloudrealestate.ai');
+    setValue('password', 'DemoUser@2026');
+    setErrorMessage('');
+  };
 
   const onSubmit = async (data) => {
     setErrorMessage('');
@@ -111,6 +117,24 @@ export const LoginPage = () => {
               )}
             </button>
           </form>
+
+          {/* Quick Demo Credentials Card */}
+          <div className="p-3.5 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-brand-300">Quick Demo Account</span>
+              <button
+                type="button"
+                onClick={handleFillDemo}
+                className="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-brand-600/30 hover:bg-brand-600/50 text-brand-200 border border-brand-500/30 transition-all cursor-pointer"
+              >
+                Auto-fill Demo
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 font-mono">
+              Email: <span className="text-slate-200">demo@cloudrealestate.ai</span><br />
+              Password: <span className="text-slate-200">DemoUser@2026</span>
+            </p>
+          </div>
 
           <div className="text-center pt-2 border-t border-slate-800/80">
             <p className="text-xs text-slate-400">

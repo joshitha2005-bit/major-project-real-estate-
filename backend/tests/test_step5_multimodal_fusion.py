@@ -248,9 +248,10 @@ class TestStep5MultimodalFusion:
 
     def test_16_frontend_uses_main_multimodal_endpoint(self):
         """16. Frontend uses main multimodal endpoint"""
-        fe_service = "frontend/src/services/aiService.js"
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        fe_service = os.path.join(repo_root, "frontend", "src", "services", "aiService.js")
         if not os.path.exists(fe_service):
-            fe_service = "c:/major real estate/frontend/src/services/aiService.js"
+            fe_service = "frontend/src/services/aiService.js"
         with open(fe_service, "r", encoding="utf-8") as f:
             code = f.read()
         assert "/ai/analyze-property" in code
